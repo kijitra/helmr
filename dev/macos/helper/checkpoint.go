@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -183,6 +184,12 @@ func checkpoint(machine *vz.VirtualMachine, config *vz.VirtualMachineConfigurati
 			return err
 		}
 		report["frozen"] = frozen
+		live := make([]byte, 128)
+		if _, err := storage.local.ReadAt(context.Background(), live, 4096); err != nil {
+			return err
+		}
+		report["live_disk_sequences_before_stop"] = []uint64{binary.LittleEndian.Uint64(live[:8]), binary.LittleEndian.Uint64(live[64:72])}
+		report["nbd_operations_before_stop"] = storage.device.Statistics()
 	} else {
 		if err := call(func() error {
 			return machine.RestoreMachineStateFromURL(filepath.Join(volume, "checkpoint", "state.vz"))

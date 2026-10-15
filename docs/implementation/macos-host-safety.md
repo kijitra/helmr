@@ -280,3 +280,36 @@ ownership, and verify retained marker/capacity behavior. The Linux amd64 suite
 cross-compiles but was not executed. Independent security review found no
 blocking issue. Worker admission, native recovery, verifier and preparation-stage
 qualification remain fail-closed. No VM was launched by these unit tests.
+
+### Native write durability repair
+
+The LocalVersion physical trial ran after host headroom recovered and caught a
+real failure before restore: both guest disks reported sequence 2, but reopening
+the Computer disk exposed only sequence 1. A bounded diagnostic replay observed
+sequence 2 in LocalVersion memory before Stop, three NBD WRITEs and zero NBD
+FLUSH requests, despite the VZ attachment selecting full synchronization. This
+identifies the failed boundary in this fixture; it does not establish why VZ or
+the raw guest block path omitted FLUSH. Both failed runs confirmed native Stop,
+reaped the helper and normally detached only the exact owned image after
+preserving evidence. No force-detach or unrelated VM operation was used.
+
+UnixDevice now durably commits each complete WRITE/TRIM before a successful
+reply, holding the request mutex through persistence. Linux block attachments
+keep buffered writes and explicit FLUSH. The fixture still closes and reopens
+LocalVersion without a teardown flush. A subsequent physical cycle passed in
+7.240 seconds, preserving RAM nonce, PID, start time, open FD and both disk
+journals across separate helper processes; source sequence 2 continued to 3.
+Both helpers exited and the exact image was detached and removed.
+
+The full Darwin disk/NBD race suite passes. Protocol tests require complete
+EIO/ENOSPC replies on injected persistence failure, including failures at staged
+objects, synced root, renamed root and committed directory boundaries. No-client-
+FLUSH WRITE/TRIM survives reopen; online capture cannot split a logical request;
+Linux buffered behavior is covered unchanged. Independent review found one test
+that incorrectly allowed a missing error response; it was tightened and passed.
+
+Limitation: durable Unix mutations wait behind an in-progress capture commit,
+including its encoding. The VM remains runnable and reads can proceed, but the
+buffered backend's write progress during encoding is not preserved. Write
+amplification, latency under realistic workloads, ext4 syncfs, full Worker
+lifecycle, M3/Mac mini and long-duration host responsiveness remain unqualified.

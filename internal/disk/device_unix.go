@@ -35,6 +35,7 @@ type UnixDevice struct {
 	cancel   context.CancelFunc
 	done     chan struct{}
 	serveErr error
+	stats    versionDeviceStats
 	closed   bool
 }
 
@@ -138,7 +139,7 @@ func (d *UnixDevice) BindConsumer(exited <-chan struct{}) error {
 				d.serveErr = ctx.Err()
 				return
 			}
-			err = d.disk.ServeNBDConnection(ctx, conn)
+			err = d.disk.serveUnixConnection(ctx, conn, &d.stats)
 			var fatal interface{ FatalDeviceError() bool }
 			if errors.As(err, &fatal) && fatal.FatalDeviceError() {
 				d.serveErr = err
@@ -255,4 +256,8 @@ func reconnectableNBD(err error) bool {
 		return false
 	}
 	return err == nil || err == io.EOF
+}
+
+func (d *UnixDevice) Statistics() UnixDeviceStats {
+	return UnixDeviceStats{Writes: d.stats.writes.Load(), Flushes: d.stats.flushes.Load(), CompletedFlushes: d.stats.completedFlushes.Load(), Trims: d.stats.trims.Load()}
 }

@@ -154,3 +154,10 @@ One older raw-NBD helper completed a physical checkpoint cycle. The current
 LocalVersion helper has passed build and static checks; its physical trial was
 rejected before admission because host free/speculative memory was below 2 GiB.
 See the implementation record for exact scope and remaining qualification.
+
+
+The later LocalVersion trial found and repaired a durability gap: the raw guest
+block fixture delivered WRITEs but no NBD FLUSH. Unix exports now persist each
+mutation before successful reply. The first repaired cross-process cycle passed;
+this still is not a full Worker or ext4 workload qualification. Writes may wait
+behind capture encoding. See the latest implementation evidence for results.
