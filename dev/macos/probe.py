@@ -315,7 +315,7 @@ def run_probe(args):
         result['helper'] = report
         write_record(admission.run / 'helper-result.json', report)
         if args.mode == 'smoke':
-            with (image.mount / 'serial.log').open('rb') as log:
+            with (image.mount / 'smoke-serial.log').open('rb') as log:
                 boot_log = log.read(65536)
             result['guest_init_exec_attempt_observed'] = b'Run /init as init process' in boot_log
             if not result['guest_init_exec_attempt_observed']:
@@ -331,7 +331,7 @@ def run_probe(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['validate', 'smoke'])
+    parser.add_argument('mode', choices=['validate', 'validate-nbd', 'smoke'])
     parser.add_argument('--kernel', type=Path)
     parser.add_argument('--kernel-sha256')
     parser.add_argument('--initramfs', type=Path)

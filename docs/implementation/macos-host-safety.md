@@ -1,7 +1,9 @@
 # macOS host safety implementation
 
-Status: standalone safety probe implemented and exercised on M1 Max; full macOS
-Worker support and everyday-host qualification are not established.
+Status: native checkpoint experiment, Unix NBD/LocalVersion transport and ARM64
+guestd build implemented. One earlier raw-NBD checkpoint cycle passed on M1 Max.
+The current LocalVersion physical trial is blocked by host memory admission.
+Full macOS Worker support and everyday-host qualification are not established.
 
 ## Outcome and boundaries
 
@@ -109,3 +111,113 @@ Next implement and qualify coherent RAM/disk save and restore through the reused
 binding and guest-control protocol, followed by full-stack capacity/isolation
 checks and each target Mac. Do not label the complete macOS runtime ready from
 these probe results.
+
+## Full-runtime continuation (2026-10-15)
+
+The operator requested completion beyond the probe. Target/source is the same
+fork and branch at `be91efd595504e79a9574e3e3e1740316ced746a`; origin fetched and
+worktree clean. No supporting repository changed. Keep the active branch instead
+of pulling/rebasing unrelated upstream work. Full Review remains required;
+independent architecture and host-safety reviewers are engaged. Cross-model
+review remains unavailable. The existing PR remains the single delivery unit.
+
+Implementation order:
+
+1. Validate the **actual** candidate storage attachment for the existing online
+   Computer capture contract. Raw file snapshots alone cannot replace
+   `LocalVersion.Capture` while execution continues. Test VZ's private Unix NBD
+   attachment and save/restore configuration support before porting the Worker.
+2. Qualify cross-process RAM/disk restoration with immutable captured disks,
+   separate writable restore copies, a strict compatibility manifest, guest
+   freeze/continue separation, and an independent nonce/counter/child/open-FD/
+   cold-boot oracle. Keep fixed storage and explicit time budgets; failures
+   retain quarantine. No cold-boot fallback on restore.
+3. Implement the host-initiated guest control transport, tracked disk provider,
+   isolated artifact verifier and deny-by-default communication adapter.
+4. Integrate the backend into Worker startup, recovery, admission, typed runtime
+   identity, checkpoint publication and ARM64 artifact builds; retain Linux
+   behavior and existing authority checks.
+5. Run full local Agent/ask/resume and fault cases, then hardware-specific and
+   long-running coexistence qualification. A first checkpoint pass is not the
+   completion criterion.
+
+Critical dependencies identified by source review: native verifier requires
+Linux cgroup v2; Computer materialization and startup recovery require Linux
+NBD; runtime identities and executable validation admit only x86_64; online
+Computer capture must not silently become a VM-wide pause; snapshot envelopes
+assume Firecracker state and separate RAM. These need explicit implementations,
+not successful returns from currently unsupported stubs.
+
+
+## Checkpoint and disk integration (2026-10-15)
+
+The helper now boots a checksum-pinned ARM64 userspace fixture, creates a child
+process holding a random RAM nonce and an open disk FD, freezes and fsyncs both
+guest disks, pauses/saves VZ state, stops, and exits. A separate helper restores
+into paused state, verifies the original nonce/PID/start time/FD position while
+the workload is still frozen, then explicitly continues it. A strict bounded
+manifest binds the exact helper, host boot session, configuration and object
+hashes. Restore uses separate writable disks and never falls back to a cold boot.
+The supervisor checks both disk journals after each helper exits and revalidates
+the immutable cut after continuation. The fixture is not Helmr guestd or an Agent.
+
+The [historical raw-NBD result](../testing/evidence/macos-m1-checkpoint-raw-fixture.json)
+records one successful cross-process cycle on the M1 Max. Sequence advanced from
+2 to 3, boot count remained 1, nonce/PID/start time stayed identical, and FD offset
+advanced from 4224 to 4288. The exact owned image was detached and removed.
+This record is bound to its old helper binary digest, not the current source.
+The prior uncommitted helper source was not archived as a reproducible commit;
+the record expressly preserves that provenance limit. The host boot-session ID
+is hashed consistently for publication. This is not a 20-cycle qualification.
+
+Native VZ initially rejected the NBD-backed configuration at Start. Adding the
+Apple-required network client entitlement alone did not resolve it. Adding
+standard bounded NBD INFO/GO negotiation did; the later raw fixture completed.
+The failed attempts remained quarantined until helper exit and exact owned
+image identity were established, then were normally detached. The result does
+not attribute the original failure to the entitlement alone.
+
+Current implementation reuses encrypted `disk.LocalVersion` through the new
+`disk.UnixDevice`. It makes an exclusive durable owner/generation claim before
+binding; serves only after one lifecycle consumer is bound; permits at most four
+sequential clean connections; and retains evidence after close. Fatal storage
+errors survive a concurrent cancellation. Truncated requests and protocol faults
+terminate the export instead of opening a new session. Disk Close requires
+consumer exclusion and joins NBD operations before releasing LocalVersion.
+
+The current helper acknowledges a non-freezing guest flush, captures a root
+while the VM remains running, then verifies that this retained root still
+contains sequence 1 and excludes later sequence 2 after the next guest flush.
+After native Stop, it joins the server, closes and reopens LocalVersion, then
+exports a bounded raw inspection copy for the supervisor's disk journal checks.
+Restore reseeds a new LocalVersion from the immutable raw fixture cut. This
+bridge tests the actual disk transport, but **does not implement production
+checkpoint publication, key custody, or encrypted recovery across helper death**.
+
+| Check | Result |
+| --- | --- |
+| Python admission/manifest/corruption/copy/journal/deadline tests | 37 passed |
+| `go test -race ./internal/disk ./internal/nbd` | Passed on Darwin; subsequent UnixDevice fatal/cancellation regression suite also passed |
+| Helper build, `go vet`, ad-hoc signature | Passed |
+| Guestd build driver, unsupported arch and hostile environment tests | Passed |
+| Linux amd64 disk test binary | Compiled; not executed; no KVM claim |
+| Actual x86_64 and aarch64 guestd binaries | Built; ELF64 little-endian machine 62/183 checked; ARM build metadata pins `GOARM64=v8.0` |
+| Historical raw-NBD fixture checkpoint | One physical cycle passed; separate helper digest recorded |
+| Current LocalVersion-backed native checkpoint | Not run: pre-admission free/speculative memory was below the 2 GiB reserve |
+| Cleanup after rejected current trial | No VM/image created; no active marker; only the stable lock remains |
+| Production Agent/ask/resume, Linux KVM regression, 20-cycle and fault qualification | Not run |
+| M3, Apple Silicon Mac mini, long-duration responsiveness/thermals | Not run |
+
+Independent design/safety reviews found and fixed payload EOF reconnection,
+fatal errors masked by cancellation, capture without a guest flush, and missing
+retained-root content checks. Cross-model security review remains unavailable.
+No memory protection threshold was lowered to obtain a passing trial. The
+current physical gate must pass before changing scheduler/schema contracts or
+claiming full runtime readiness. Remaining implementation includes the Worker
+backend/lifecycle barriers, isolated artifact verification, controlled network
+and secret mediation, backend-tagged identities/checkpoint publication, complete
+ARM64 runtime/seed/compiler pipeline, and a genuine local service composition.
+
+The [current candidate record](../testing/evidence/macos-localversion-candidate.json)
+binds source-file, helper and input hashes to these checks. It explicitly records
+physical and Worker gates as unverified.

@@ -1,0 +1,151 @@
+{
+  "base_commit": "be91efd595504e79a9574e3e3e1740316ced746a",
+  "checks": {
+    "disk_linux_amd64_test_compile": "pass; not executed",
+    "disk_nbd_race_tests": "pass on Darwin",
+    "full_worker": "not_implemented",
+    "guestd_aarch64": {
+      "bytes": 11272352,
+      "goarm64": "v8.0",
+      "sha256": "20bbea81219b6357904f738f1aa54d261d3817148f9352876a172ebaaa7def3e"
+    },
+    "guestd_architecture_driver": "pass",
+    "guestd_x86_64": {
+      "bytes": 12103840,
+      "sha256": "f6613e347e560d52a1a24ec02a1f9dc6f26028ec5649d7173c1eae6f2f8f6b5e"
+    },
+    "helper_build_vet_signature": "pass",
+    "native_localversion_checkpoint": {
+      "image_created": false,
+      "reason": "host free/speculative memory below 2 GiB reserve at pre-admission",
+      "status": "not_run",
+      "unresolved_run_marker": false,
+      "vm_started": false
+    },
+    "python_tests": {
+      "count": 37,
+      "status": "pass"
+    },
+    "target_m3_macmini": "not_run"
+  },
+  "date": "2026-10-15",
+  "fixture_inputs": {
+    "apk_sha256": "1cb07a2d56c685194cadde1c2f436a71eb4fd1aeab9458c4bf249e2b467f5bdb",
+    "fixture_sha256": "5f8cd8af3511b2dfb42976479cae489048daaf5a35ae0726f03ef76eac012335",
+    "initramfs_sha256": "fcc7d9230b48fc9a74fc40e9088037567b32ce5f852b7c5131610d472463d940",
+    "kernel_release": "6.18.56-0-virt",
+    "kernel_sha256": "83f0f9170a21ba2b4b8fca0aa1931ee94ff0c117f4e20c6062749a5c0b5d184a",
+    "source": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/linux-virt-6.18.56-r0.apk"
+  },
+  "helper": {
+    "bytes": 8401952,
+    "sha256": "4e14f8f1ab4812fb8c7ffb8a78717744d3865b03e9328b5b3681a75b7e562367"
+  },
+  "review": {
+    "cross_model": "unavailable",
+    "independent_architecture_and_security": "actionable findings fixed for bounded candidate; does not establish physical qualification"
+  },
+  "scope": "Current LocalVersion checkpoint candidate; not physically qualified; not a macOS Worker",
+  "source_files": {
+    "dev/macos/build.sh": {
+      "bytes": 490,
+      "sha256": "e608009beabced2d1b390096a993dd386cfd4d4d9f6373c49cf22cd11f86cff0"
+    },
+    "dev/macos/build_fixture.py": {
+      "bytes": 4452,
+      "sha256": "09d48a880880e2bde9f9ddfa03f1d27bafd7df0ed7e5b2565bd0a9c2678faf3e"
+    },
+    "dev/macos/checkpoint.py": {
+      "bytes": 10367,
+      "sha256": "821a39d6cce25538399d694078555722199f5f76249e77f57df5397e958694d5"
+    },
+    "dev/macos/entitlements.plist": {
+      "bytes": 287,
+      "sha256": "4bda2d2d4b18eb7bf94a9096ff2cfed3d3073cf7da9aa25cf30b702c7fb7f907"
+    },
+    "dev/macos/fixture/go.mod": {
+      "bytes": 99,
+      "sha256": "019640594fb0643dae8c9d9f4c27ef2a9e73aa3ded800c03308846873767ac8a"
+    },
+    "dev/macos/fixture/go.sum": {
+      "bytes": 153,
+      "sha256": "1f09c843ac71cafbe348de2aaf51a40e74a2b39eee9127c81527f0d16193b31d"
+    },
+    "dev/macos/fixture/main.go": {
+      "bytes": 6061,
+      "sha256": "3b32e61e0435fca3043c7daa5e179510872c688b206921d14bfd98056de02dc1"
+    },
+    "dev/macos/helper/checkpoint.go": {
+      "bytes": 8038,
+      "sha256": "ab30df78c6ed488e020f3a62c05fca9d3a9c9f2147f86ee4c0eca46f4c0bae41"
+    },
+    "dev/macos/helper/go.mod": {
+      "bytes": 598,
+      "sha256": "9f3f4730b8c7b6d04d1004afb61db55a1a673b39a1a60553a18542fb96a50b52"
+    },
+    "dev/macos/helper/go.sum": {
+      "bytes": 2641,
+      "sha256": "159dae23be401c91704922b5a3c1380a7a7dd21231c65e27b0d51d4388831d9f"
+    },
+    "dev/macos/helper/main.go": {
+      "bytes": 10982,
+      "sha256": "e72f1cb472b17cf9146008a1b235795482af2e1cf61d6599ed207c7b67131bf0"
+    },
+    "dev/macos/helper/version_disk.go": {
+      "bytes": 6253,
+      "sha256": "e83aa2de761aa9ed6e2467f8f91fd86558c1e9735c5a7a548aafc1d02aacf746"
+    },
+    "dev/macos/probe.py": {
+      "bytes": 16150,
+      "sha256": "ca30863620b27424f419be59d74ea7750715ba1e2632fb2d83565c53ae53810c"
+    },
+    "dev/macos/test_checkpoint.py": {
+      "bytes": 5329,
+      "sha256": "69a9a39c9e37b800861f0b70ff6099ed69cb53ae8a057b1179d0c15cdff6e775"
+    },
+    "dev/macos/test_probe.py": {
+      "bytes": 9899,
+      "sha256": "2001d3f6f7aa91e5238cabb70704e173cf23cf3e321f475b6bda024365fbefbd"
+    },
+    "dev/macos/verify_storage.py": {
+      "bytes": 4920,
+      "sha256": "3d3688386f69b5b9774a868a13c96e82fbf9360f3bc7fddffd3e21c9bc100e2b"
+    },
+    "internal/disk/device_unix.go": {
+      "bytes": 6831,
+      "sha256": "7e1241a966bf3d878a8a07764797538c521faf9251cd601f29014f4ee0af90e7"
+    },
+    "internal/disk/device_unix_test.go": {
+      "bytes": 9098,
+      "sha256": "b22ad4c2e3d7d2a292d2f28104ee1fd0f167ff23d26b086d9946af4e0bee968d"
+    },
+    "internal/disk/nbd.go": {
+      "bytes": 3285,
+      "sha256": "04a6921b17482d000409d3ec4868237adb9f73601e24b7d2bf31d6d44ff0b91e"
+    },
+    "internal/nbd/server.go": {
+      "bytes": 6317,
+      "sha256": "2d2636d957cb2f311a8e5500cfda4278b47bb5e40754c329f736daa6129da94a"
+    },
+    "internal/nbd/server_info_test.go": {
+      "bytes": 4361,
+      "sha256": "8fdce9ef6bbdc31d48b74d3e43014743f82eb53869389c0b8dacb9a73d34a90c"
+    },
+    "internal/nbd/server_test.go": {
+      "bytes": 1845,
+      "sha256": "157e932ccda5f3abcaa0cce278fffd01686cd5e0f64275ffc424f1be2a1b34c0"
+    },
+    "internal/nbd/transmission.go": {
+      "bytes": 4248,
+      "sha256": "ec12e64ea9452195dcf76efd0c9472b16644fa32ab046c5cba5c6aae266789cc"
+    },
+    "scripts/build-guestd-linux.sh": {
+      "bytes": 567,
+      "sha256": "b1ff36d80b3826457b3ba3a252de41da53599d01b41da8d89bc808a67e44b641"
+    },
+    "tests/build/guestd-architecture.test.sh": {
+      "bytes": 1605,
+      "sha256": "89807c5d5da4542d6b94924843afa16e4686fc41bed629baddd2a5f6f040b5ae"
+    }
+  }
+}

@@ -58,6 +58,9 @@ func ServeTransmission(ctx context.Context, rw io.ReadWriter, d BlockDevice, siz
 		if cmd == 1 {
 			payload = make([]byte, int(n))
 			if _, err := io.ReadFull(rw, payload); err != nil {
+				if err == io.EOF {
+					return io.ErrUnexpectedEOF
+				}
 				return err
 			}
 		}

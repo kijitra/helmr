@@ -1,7 +1,6 @@
 # macOS local runtime proposal
 
-Status: design and standalone safety probe; no macOS Worker is implemented by
-this change. See [current probe evidence](../implementation/macos-host-safety.md#validation-evidence-2026-10-15).
+Status: native checkpoint experiment, Unix NBD/LocalVersion adapter and ARM64 guestd build implemented; full macOS Worker remains incomplete. See [current evidence](../implementation/macos-host-safety.md#checkpoint-and-disk-integration-2026-10-15).
 Baseline: upstream `2148c4416c4ea16e81218043af79b3f3d523fed7`.
 
 ## Outcome and acceptance boundary
@@ -24,7 +23,7 @@ at admission.
 
 | Target | Required qualification | Current evidence |
 | --- | --- | --- |
-| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | Bounded offline Linux `/init` execution-attempt smoke and cleanup; no VM restore |
+| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | One cross-process raw-NBD checkpoint cycle passed; LocalVersion physical trial blocked by host headroom; no full Worker qualification |
 | M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | Not run; exact model, RAM and macOS to be recorded |
 | Apple Silicon Mac mini | Same native arm64 backend; qualify each claimed chip/OS/RAM configuration | Not run; exact model, chip, RAM and macOS to be recorded |
 

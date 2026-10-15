@@ -5,10 +5,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -69,9 +71,9 @@ func ownership(volume string, fd int) error {
 	return nil
 }
 
-func configuration(volume, mode string) (*vz.VirtualMachineConfiguration, []*os.File, error) {
+func configuration(volume, mode, nbdURL string) (*vz.VirtualMachineConfiguration, []*os.File, error) {
 	opts := []vz.LinuxBootLoaderOption{}
-	if mode == "smoke" {
+	if mode == "smoke" || strings.HasPrefix(mode, "checkpoint-") {
 		opts = append(opts, vz.WithInitrd(filepath.Join(volume, "initramfs")), vz.WithCommandLine("console=hvc0 panic=-1"))
 	}
 	boot, err := vz.NewLinuxBootLoader(filepath.Join(volume, "kernel"), opts...)
@@ -82,14 +84,47 @@ func configuration(volume, mode string) (*vz.VirtualMachineConfiguration, []*os.
 	if err != nil {
 		return nil, nil, err
 	}
-	platform, err := vz.NewGenericPlatformConfiguration()
+	var platformOptions []vz.GenericPlatformConfigurationOption
+	if strings.HasPrefix(mode, "checkpoint-") {
+		identifier, err := machineIdentifier(volume, mode)
+		if err != nil {
+			return nil, nil, err
+		}
+		platformOptions = append(platformOptions, vz.WithGenericMachineIdentifier(identifier))
+	}
+	platform, err := vz.NewGenericPlatformConfiguration(platformOptions...)
 	if err != nil {
 		return nil, nil, err
 	}
 	config.SetPlatformVirtualMachineConfiguration(platform)
 	var disks []vz.StorageDeviceConfiguration
 	for _, name := range []string{"scratch.raw", "computer.raw"} {
-		attachment, err := vz.NewDiskImageStorageDeviceAttachmentWithCacheAndSync(filepath.Join(volume, name), false, vz.DiskImageCachingModeUncached, vz.DiskImageSynchronizationModeFull)
+		var attachment vz.StorageDeviceAttachment
+		var err error
+		if (mode == "validate-nbd" || strings.HasPrefix(mode, "checkpoint-")) && name == "computer.raw" {
+			// Configuration-only: no VM is constructed and no connection is opened.
+			endpoint := nbdURL
+			if endpoint == "" {
+				endpoint = "nbd+unix:///?socket=" + filepath.Join(volume, "computer.sock")
+			}
+			var remote *vz.NetworkBlockDeviceStorageDeviceAttachment
+			remote, err = vz.NewNetworkBlockDeviceStorageDeviceAttachment(endpoint, 3*time.Second, false, vz.DiskSynchronizationModeFull)
+			if err == nil {
+				attachment = remote
+				go func() {
+					for range remote.Connected() {
+					}
+				}()
+				go func() {
+					for e := range remote.DidEncounterError() {
+						fmt.Fprintln(os.Stderr, "NBD attachment failed:", e)
+						os.Exit(1)
+					}
+				}()
+			}
+		} else {
+			attachment, err = vz.NewDiskImageStorageDeviceAttachmentWithCacheAndSync(diskPath(volume, mode, name), false, vz.DiskImageCachingModeUncached, vz.DiskImageSynchronizationModeFull)
+		}
 		if err != nil {
 			return nil, nil, err
 		}
@@ -114,6 +149,11 @@ func configuration(volume, mode string) (*vz.VirtualMachineConfiguration, []*os.
 	if err != nil {
 		return nil, files, err
 	}
+	mac, err := vz.NewMACAddress(net.HardwareAddr{2, 252, 0, 0, 0, 2})
+	if err != nil {
+		return nil, files, err
+	}
+	nic.SetMACAddress(mac)
 	config.SetNetworkDevicesVirtualMachineConfiguration([]*vz.VirtioNetworkDeviceConfiguration{nic})
 	socket, err := vz.NewVirtioSocketDeviceConfiguration()
 	if err != nil {
@@ -125,12 +165,12 @@ func configuration(volume, mode string) (*vz.VirtualMachineConfiguration, []*os.
 		return nil, files, err
 	}
 	config.SetEntropyDevicesVirtualMachineConfiguration([]*vz.VirtioEntropyDeviceConfiguration{entropy})
-	serialFile, err := os.OpenFile(filepath.Join(volume, "serial.log"), os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0600)
+	serialFile, err := os.OpenFile(filepath.Join(volume, mode+"-serial.log"), os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0600)
 	if err != nil {
 		return nil, files, err
 	}
 	files = append(files, serialFile)
-	serialAttachment, err := vz.NewFileSerialPortAttachment(filepath.Join(volume, "serial.log"), true)
+	serialAttachment, err := vz.NewFileSerialPortAttachment(filepath.Join(volume, mode+"-serial.log"), true)
 	if err != nil {
 		return nil, files, err
 	}
@@ -182,7 +222,20 @@ func run(mode, volume string, fd int, parentGone <-chan struct{}) error {
 	if err := ownership(volume, fd); err != nil {
 		return err
 	}
-	config, files, err := configuration(volume, mode)
+	var storage *fixtureDisk
+	var endpoint string
+	if strings.HasPrefix(mode, "checkpoint-") {
+		var err error
+		storage, err = newFixtureDisk(volume, mode)
+		if err != nil {
+			return err
+		}
+		endpoint, err = storage.device.NBDURL(context.Background())
+		if err != nil {
+			return err
+		}
+	}
+	config, files, err := configuration(volume, mode, endpoint)
 	defer func() {
 		for _, f := range files {
 			f.Close()
@@ -192,7 +245,7 @@ func run(mode, volume string, fd int, parentGone <-chan struct{}) error {
 		return fmt.Errorf("full-device configuration: %w", err)
 	}
 	report := map[string]any{"mode": mode, "clean": true, "state": "not-started", "binding": "Code-Hex/vz v3.8.0", "save_restore_configuration_valid": true, "checkpoint_verified": false, "guest_vcpus": 1, "guest_memory_mib": 512}
-	if mode == "validate" {
+	if mode == "validate" || mode == "validate-nbd" {
 		return json.NewEncoder(os.Stdout).Encode(report)
 	}
 	machine, err := vz.NewVirtualMachine(config)
@@ -219,6 +272,9 @@ func run(mode, volume string, fd int, parentGone <-chan struct{}) error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 	defer signal.Stop(signals)
+	if strings.HasPrefix(mode, "checkpoint-") {
+		return checkpoint(machine, config, files, mode, volume, parentGone, signals, storage)
+	}
 	if err = boundedCall(func() error { return machine.Start() }, 8, parentGone, signals); err != nil {
 		return err
 	}
@@ -249,7 +305,7 @@ func run(mode, volume string, fd int, parentGone <-chan struct{}) error {
 }
 
 func main() {
-	if len(os.Args) != 4 || (os.Args[1] != "validate" && os.Args[1] != "smoke") || os.Getuid() == 0 {
+	if len(os.Args) != 4 || (os.Args[1] != "validate" && os.Args[1] != "validate-nbd" && os.Args[1] != "smoke" && os.Args[1] != "checkpoint-save" && os.Args[1] != "checkpoint-restore") || os.Getuid() == 0 {
 		fmt.Fprintln(os.Stderr, "unprivileged runner invocation required")
 		os.Exit(1)
 	}
@@ -259,10 +315,14 @@ func main() {
 	go func() { var b [1]byte; _, _ = os.Stdin.Read(b[:]); close(parentGone); os.Exit(125) }()
 	// Covers native configuration/constructor calls too, even if the runner dies.
 	start := continuous()
+	budget := float64(15)
+	if strings.HasPrefix(os.Args[1], "checkpoint-") {
+		budget = 30
+	} // explicit per-process checkpoint budget
 	go func() {
 		for {
 			time.Sleep(100 * time.Millisecond)
-			if continuous()-start >= 15 {
+			if continuous()-start >= budget {
 				os.Exit(124)
 			}
 		}

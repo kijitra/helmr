@@ -90,3 +90,17 @@ func (p *LocalVersion) ServeNBD(ctx context.Context, listener net.Listener) erro
 	p.life.RUnlock()
 	return nbd.ServeOnce(ctx, listener, versionDevice{p}, size)
 }
+
+// ServeNBDConnection owns one already-accepted private connection, including
+// bounded negotiation. A lifecycle owner may accept sequential reconnects only
+// while the same consumer and LocalVersion remain exclusively owned.
+func (p *LocalVersion) ServeNBDConnection(ctx context.Context, conn net.Conn) error {
+	p.life.RLock()
+	size, closed := p.head.Root.LogicalBytes, p.closed
+	p.life.RUnlock()
+	if closed {
+		conn.Close()
+		return errors.New("local version is closed")
+	}
+	return nbd.Serve(ctx, conn, versionDevice{p}, size)
+}
