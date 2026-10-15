@@ -14,9 +14,26 @@ credentials remain optional user configuration.
 
 Preserve the existing execution, authority, storage, and secret-delivery
 semantics. A subprocess runner or disk-only restart does not meet this goal.
-Linux Firecracker remains supported. Initial qualification targets Apple
-Silicon, including M1; Intel Mac execution and migration between Macs are
-separate, unproven capabilities. Their absence must be visible at admission.
+Linux Firecracker remains supported. Qualification targets M1, M3-equipped
+Macs, and Apple Silicon Mac mini models. Intel Mac execution and migration
+between Macs are separate, unproven capabilities. Their absence must be visible
+at admission.
+
+### Hardware qualification targets
+
+| Target | Required qualification | Current evidence |
+| --- | --- | --- |
+| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | Minimal API configuration probe only; no VM restore |
+| M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | Not run; exact model, RAM and macOS to be recorded |
+| Apple Silicon Mac mini | Same native arm64 backend; qualify each claimed chip/OS/RAM configuration | Not run; exact model, chip, RAM and macOS to be recorded |
+
+A result on one Mac does not establish support for another chip or every
+Mac mini generation. Size concurrency and reservations from available memory,
+CPU and disk; do not copy the 64 GiB reference host's capacity as a requirement
+or a default. Validate single-VM operation and resource rejection on the
+smallest memory configuration claimed as supported. Minimum RAM and supported
+macOS versions remain qualification outputs. The local support matrix must
+distinguish intended targets from verified configurations.
 
 ## Current coupling
 
@@ -97,7 +114,7 @@ flowchart TB
     UI["操作画面・CLI"]
     CP["Helmr管理層<br/>Control Plane / Dispatcher<br/>仕事・進捗・再開許可を管理"]
     W["Worker【拡張】<br/>実行権限・CPU・メモリを管理"]
-    DB[("ローカル管理データ<br/>PostgreSQL / ClickHouse")]
+    DB[("ローカル管理データ<br/>PostgreSQL：実行状態<br/>ClickHouse：ログ履歴")]
     STORE[("ローカルS3互換ストレージ<br/>CAS / platform store")]
 
     subgraph NEW["今回追加するmacOS実行基盤"]
@@ -285,6 +302,18 @@ commands do not become no-ops on macOS. Prove reconnect and write ordering with
 the full device set at Gate 0, then choose one implementation.
 
 ## Complete local composition
+
+ClickHouse preserves the upstream historical-log path; it is not part of VM
+state serialization. `internal/clickhouse/README.md` defines three histories:
+session, image-build and Computer-command logs. PostgreSQL owns accepted chunks
+and export claims; ClickHouse holds their historical projection, and its
+acknowledgment permits retiring the accepted chunks. Deployment events remain
+in PostgreSQL. The CP reads historical logs from ClickHouse, and the Dispatcher
+exports them. Both currently require ClickHouse configuration, so removing it
+from the full local stack requires an explicit storage/reader/export redesign.
+The standalone Gate 0 VM experiment does not require ClickHouse. Measure its
+idle/load memory and backlog behavior alongside the other services on each
+target configuration before setting the full-stack minimum memory requirement.
 
 Provide a separate local launcher after backend qualification. It owns and
 stops only its own PostgreSQL 18, ClickHouse, S3-compatible service, CP,

@@ -120,12 +120,18 @@ Include M35 at each restore barrier. The experiment must use the intended device
 not a simpler VM configuration that omits the failing device. If native restore
 or isolated networking fails, stop integration and revise the backend design.
 
-Contract/schema work then implements L/I cases first. Run all M cases on M1
-before claiming M1 support. Run the backend-independent suite and existing
-Firecracker tests on a real x86_64 Linux/KVM host; compilation is not that
-evidence. Additional chip/OS combinations get explicit rows in the support
-matrix. Unrun combinations remain unverified. OS upgrade and another-host
-cases need their respective real environments, not only mocked error codes.
+Contract/schema work then implements L/I cases first. Run all M cases on each
+configuration claimed as supported: the M1 reference, an M3-equipped Mac and
+the targeted Apple Silicon Mac mini configurations. Record model, chip, RAM
+and macOS build per run. Run M27/M32/M34 on the smallest memory configuration
+claimed as supported, measuring the complete stack including ClickHouse and
+build services; include bounded single-VM operation and rejected over-capacity
+requests. Do not infer all Mac mini generations from one tested machine.
+Run the backend-independent suite and existing Firecracker tests on a real
+x86_64 Linux/KVM host; compilation is not that evidence. Each chip/OS/RAM
+combination gets an explicit support-matrix row. Unrun combinations remain
+unverified. OS upgrade and another-host cases need their respective real
+environments, not only mocked error codes.
 
 A qualification record contains source SHA, signed helper digest, guest/runtime
 artifact digests, exact device/network configuration, macOS build, chip family,
