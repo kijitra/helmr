@@ -23,7 +23,7 @@ at admission.
 
 | Target | Required qualification | Current evidence |
 | --- | --- | --- |
-| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | One cross-process raw-NBD checkpoint cycle passed; LocalVersion physical trial blocked by host headroom; no full Worker qualification |
+| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | 20/20 repaired LocalVersion synthetic checkpoint cycles passed; no full Worker qualification |
 | M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | Not run; exact model, RAM and macOS to be recorded |
 | Apple Silicon Mac mini | Same native arm64 backend; qualify each claimed chip/OS/RAM configuration | Not run; exact model, chip, RAM and macOS to be recorded |
 

@@ -150,14 +150,14 @@ experiment does not run the actual guestd or an Agent. The production guestd
 build driver separately accepts `ARCH=aarch64` with baseline `GOARM64=v8.0`;
 complete ARM64 runtime/seed/compiler artifacts are still required for execution.
 
-One older raw-NBD helper completed a physical checkpoint cycle. The current
-LocalVersion helper has passed build and static checks; its physical trial was
-rejected before admission because host free/speculative memory was below 2 GiB.
-See the implementation record for exact scope and remaining qualification.
+The repaired LocalVersion helper completed 20/20 physical checkpoint cycles on
+the M1 Max. A prior trial caught a missing durability boundary and was corrected
+before repetition. See [the recorded evidence](../../docs/testing/evidence/macos-localversion-checkpoint.json).
+Full Worker execution, production ext4 workloads and M3/Mac mini remain unverified.
 
 
 The later LocalVersion trial found and repaired a durability gap: the raw guest
 block fixture delivered WRITEs but no NBD FLUSH. Unix exports now persist each
-mutation before successful reply. The first repaired cross-process cycle passed;
-this still is not a full Worker or ext4 workload qualification. Writes may wait
+mutation before successful reply. The passing cycles
+still do not qualify the full Worker or ext4 workload. Writes may wait
 behind capture encoding. See the latest implementation evidence for results.

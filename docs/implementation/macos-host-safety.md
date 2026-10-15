@@ -1,9 +1,9 @@
 # macOS host safety implementation
 
-Status: native checkpoint experiment, Unix NBD/LocalVersion transport and ARM64
-guestd build implemented. One earlier raw-NBD checkpoint cycle passed on M1 Max.
-The current LocalVersion physical trial is blocked by host memory admission.
-Full macOS Worker support and everyday-host qualification are not established.
+Status: the repaired Unix NBD/LocalVersion checkpoint experiment passed 20/20
+physical cycles on this M1 Max. ARM64 artifact contracts and native disk
+preparation are implemented. Full macOS Worker support and everyday-host
+qualification are not established.
 
 ## Outcome and boundaries
 
@@ -203,22 +203,22 @@ checkpoint publication, key custody, or encrypted recovery across helper death**
 | Linux amd64 disk test binary | Compiled; not executed; no KVM claim |
 | Actual x86_64 and aarch64 guestd binaries | Built; ELF64 little-endian machine 62/183 checked; ARM build metadata pins `GOARM64=v8.0` |
 | Historical raw-NBD fixture checkpoint | One physical cycle passed; separate helper digest recorded |
-| Current LocalVersion-backed native checkpoint | Not run: pre-admission free/speculative memory was below the 2 GiB reserve |
-| Cleanup after rejected current trial | No VM/image created; no active marker; only the stable lock remains |
-| Production Agent/ask/resume, Linux KVM regression, 20-cycle and fault qualification | Not run |
+| Earlier LocalVersion candidate at e4fdd499 | Trial was blocked by headroom; later trial found and repaired a durability gap (see below) |
+| Cleanup after earlier rejected trial | No VM/image created; no active marker; only the stable lock remains |
+| Repaired synthetic checkpoint repetition | 20/20 passed on this M1 Max; [evidence](../testing/evidence/macos-localversion-checkpoint.json) |
+| Production Agent/ask/resume, Linux KVM regression and full fault qualification | Not run |
 | M3, Apple Silicon Mac mini, long-duration responsiveness/thermals | Not run |
 
 Independent design/safety reviews found and fixed payload EOF reconnection,
 fatal errors masked by cancellation, capture without a guest flush, and missing
 retained-root content checks. Cross-model security review remains unavailable.
-No memory protection threshold was lowered to obtain a passing trial. The
-current physical gate must pass before changing scheduler/schema contracts or
-claiming full runtime readiness. Remaining implementation includes the Worker
+No memory protection threshold was lowered to obtain a passing trial. The native physical gate and downstream lifecycle/isolation qualification remain
+separate; passing the fixture does not establish full runtime readiness. Remaining implementation includes the Worker
 backend/lifecycle barriers, isolated artifact verification, controlled network
 and secret mediation, backend-tagged identities/checkpoint publication, complete
 ARM64 runtime/seed/compiler pipeline, and a genuine local service composition.
 
-The [current candidate record](../testing/evidence/macos-localversion-candidate.json)
+The [earlier candidate record](../testing/evidence/macos-localversion-candidate.json)
 binds source-file, helper and input hashes to these checks. It explicitly records
 physical and Worker gates as unverified.
 
@@ -313,3 +313,17 @@ including its encoding. The VM remains runnable and reads can proceed, but the
 buffered backend's write progress during encoding is not preserved. Write
 amplification, latency under realistic workloads, ext4 syncfs, full Worker
 lifecycle, M3/Mac mini and long-duration host responsiveness remain unqualified.
+
+
+The reviewed repair then passed **20/20 consecutive physical cycles** with the
+same helper, kernel and initramfs. Each cycle took 5.620–7.759 seconds and used
+1 vCPU, 512 MiB RAM and a bounded 2 GiB private image. Every cycle verified both
+disk journals after LocalVersion reopen and removed only its own image after
+normal detach. No unresolved run marker remains. The [machine-readable evidence](../testing/evidence/macos-localversion-checkpoint.json)
+records source hashes, binary identity, embedded build provenance, all cycles and
+the pre-repair diagnostic failure. This is repetition of the synthetic fixture;
+it does not qualify the production Agent or the complete fault matrix.
+
+The native macOS CLI was also built and its `--help` executed locally. It still
+needs a local Control Plane and functioning Worker; a CLI binary is not a running
+Helmr installation. No remote service login or external model call was made.
