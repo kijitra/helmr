@@ -1,0 +1,103 @@
+{
+  "build": {
+    "base_commit": "5989c40445efb6707fa238754b4de42331acda67",
+    "binding": "github.com/Code-Hex/vz/v3 v3.8.0",
+    "go": "1.27.1",
+    "physical_run_probe_sha256_before_reporting_rename": "54a36c5b9c85a60ba2328bfbe8e46022e5f31a9604dd568d5f85652c84181fde",
+    "post_run_change": "Only the Python result key and failure wording were renamed to execution attempt after review; VM predicate and lifecycle are unchanged. Smoke result key is normalized here; no further VM run.",
+    "source_sha256": {
+      "dev/macos/build.sh": "e608009beabced2d1b390096a993dd386cfd4d4d9f6373c49cf22cd11f86cff0",
+      "dev/macos/entitlements.plist": "915e2b39357ecf8d211dc7fac43195c9cdcf55a0a1ecdbf931c116a4eac421f3",
+      "dev/macos/helper/go.mod": "f9ebfdf97be08181616fcf798a1ae695daeaaf659c0880155a9f370bd3ebb5d1",
+      "dev/macos/helper/go.sum": "6a254304bd9205d68f3256b0a3eedf93ffece33eefa7dc50d516949c9060871b",
+      "dev/macos/helper/main.go": "cc48907664d1689491d0504008f76cd46f0ae5fe4d5f71752b27455de5779df0",
+      "dev/macos/probe.py": "e6648fbb0a068e6ad19d728b73ae34ed3ad7db7c7a54800a0e9e937844ddf73a",
+      "dev/macos/test_probe.py": "2001d3f6f7aa91e5238cabb70704e173cf23cf3e321f475b6bda024365fbefbd",
+      "dev/macos/verify_storage.py": "3d3688386f69b5b9774a868a13c96e82fbf9360f3bc7fddffd3e21c9bc100e2b"
+    },
+    "source_state": "uncommitted files identified by digests below"
+  },
+  "checks": {
+    "checkpoint_restore": "not run",
+    "codesign_verify_strict": "passed",
+    "configuration_validate": "passed; no VM created",
+    "full_worker": "not run",
+    "go_build": "passed",
+    "go_vet": "passed",
+    "host_sleep_power_loss_upgrade": "not run",
+    "m3": "not run",
+    "mac_mini": "not run",
+    "python_unittest": {
+      "command": "python3 -m unittest discover -s dev/macos -q",
+      "passed": 24
+    },
+    "without_xcode_runtime": "not run"
+  },
+  "date": "2026-10-15",
+  "fixed_failures": [
+    "blank-image hdiutil create uses -type UDIF; initial format option rejected before image creation",
+    "file-only serial attachment replaces nil input FD rejected by binding",
+    "guest /init execution-attempt marker replaces unavailable early Linux version marker; this kernel marker precedes kernel_execve and does not prove successful userspace initialization"
+  ],
+  "host": {
+    "chip": "Apple M1 Max",
+    "macos": "26.6.2",
+    "ram_bytes": 68719476736,
+    "sdk": "26.5"
+  },
+  "limits": [
+    "Smoke proves kernel progress to the /init execution attempt and bounded lifecycle only, not successful userspace initialization, a ready Linux distribution, or a Helmr agent",
+    "Guest CPU/RAM settings are not hard host-resource caps",
+    "Memory/free-disk samples are not per-process peak consumption or latency/thermal measurements",
+    "Quarantine forbids automatic retry; failed physical runs were explicitly reconciled with exact image identity",
+    "Safety probe does not satisfy all Gate 0 or everyday-host acceptance criteria"
+  ],
+  "postcheck": {
+    "owned_images": [],
+    "owned_state_entries": [
+      "lock"
+    ]
+  },
+  "smoke": {
+    "arch": "arm64",
+    "checkpoint_verified": false,
+    "cleanup": "helper exited; owned image detached; private artifacts removed",
+    "egress": "disconnected",
+    "guest_init_exec_attempt_observed": true,
+    "guest_memory_mib": 512,
+    "guest_vcpus": 1,
+    "helper": {
+      "binding": "Code-Hex/vz v3.8.0",
+      "checkpoint_verified": false,
+      "clean": true,
+      "guest_application_verified": false,
+      "guest_clean_shutdown": false,
+      "guest_memory_mib": 512,
+      "guest_vcpus": 1,
+      "mode": "smoke",
+      "save_restore_configuration_valid": true,
+      "state": "stopped"
+    },
+    "helper_sha256": "d1d6df8fdcaf5aefae0312f429bdac19725843f35e508f4dd7b69afb23738608",
+    "host_samples": {
+      "count": 4,
+      "min_free_disk_bytes": 56738045952,
+      "min_free_memory_bytes": 8863940608
+    },
+    "initramfs_sha256": "df5281b4c36f812d0507e219e31a8a7482e0b4175097e292b75c7872c441295c",
+    "kernel_sha256": "1eccfface8f99a197bbed4265b0a20a8708976bec4d624879e18125fb000299a",
+    "macos": "26.6.2",
+    "mode": "smoke",
+    "volume_gib": 2,
+    "worker_verified": false
+  },
+  "storage": {
+    "bytes_written": 2104492032,
+    "controller_killed_after_attachment": true,
+    "enospc_inside_owned_volume": true,
+    "image_bytes": 2147483648,
+    "next_admission_blocked": true,
+    "owned_attachment_reconciled": true,
+    "vm_created": false
+  }
+}

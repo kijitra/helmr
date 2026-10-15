@@ -88,6 +88,9 @@ func negotiate(ctx context.Context, rw io.ReadWriter, d BlockDevice, size int64)
 		}
 		payload := make([]byte, int(n))
 		if _, err := io.ReadFull(rw, payload); err != nil {
+			if err == io.EOF {
+				return io.ErrUnexpectedEOF
+			}
 			return err
 		}
 		switch option {
@@ -108,6 +111,14 @@ func negotiate(ctx context.Context, rw io.ReadWriter, d BlockDevice, size int64)
 				}
 			}
 			return ServeTransmission(ctx, rw, d, size)
+		case 6, 7: // INFO and GO share bounded request/reply framing.
+			accepted, err := exportInfo(rw, option, payload, size)
+			if err != nil {
+				return err
+			}
+			if accepted && option == 7 {
+				return ServeTransmission(ctx, rw, d, size)
+			}
 		case 2:
 			if n != 0 {
 				return errors.New("invalid abort")
@@ -122,9 +133,68 @@ func negotiate(ctx context.Context, rw io.ReadWriter, d BlockDevice, size int64)
 	return errors.New("too many negotiation options")
 }
 func optionReply(w io.Writer, option, reply uint32) error {
+	return optionReplyPayload(w, option, reply, nil)
+}
+func optionReplyPayload(w io.Writer, option, reply uint32, payload []byte) error {
 	var b [20]byte
 	binary.BigEndian.PutUint64(b[:8], replyMagic)
 	binary.BigEndian.PutUint32(b[8:12], option)
 	binary.BigEndian.PutUint32(b[12:16], reply)
-	return writeAll(w, b[:])
+	binary.BigEndian.PutUint32(b[16:], uint32(len(payload)))
+	if err := writeAll(w, b[:]); err != nil {
+		return err
+	}
+	return writeAll(w, payload)
+}
+
+// exportInfo serves one unnamed export. Sizes are checked before slicing and
+// unknown info requests are ignored per the NBD protocol. No FUA or concurrent
+// connection promises are added by this negotiation path.
+func exportInfo(w io.Writer, option uint32, payload []byte, size int64) (bool, error) {
+	reject := func(code uint32) (bool, error) { return false, optionReply(w, option, code) }
+	if len(payload) < 6 {
+		return reject(0x80000003)
+	} // ERR_INVALID
+	length := binary.BigEndian.Uint32(payload[:4])
+	if uint64(length) > uint64(len(payload)-6) {
+		return reject(0x80000003)
+	}
+	countAt := 4 + int(length)
+	count := int(binary.BigEndian.Uint16(payload[countAt : countAt+2]))
+	if len(payload) != countAt+2+count*2 {
+		return reject(0x80000003)
+	}
+	requested := make(map[uint16]bool, count)
+	for i := 0; i < count; i++ {
+		kind := binary.BigEndian.Uint16(payload[countAt+2+i*2:])
+		if requested[kind] {
+			return reject(0x80000003)
+		}
+		requested[kind] = true
+	}
+	if length != 0 {
+		return reject(0x80000006)
+	} // ERR_UNKNOWN export
+	var export [12]byte // INFO_EXPORT (0), size and transmission flags.
+	binary.BigEndian.PutUint64(export[2:10], uint64(size))
+	binary.BigEndian.PutUint16(export[10:], 1|4|32)
+	if err := optionReplyPayload(w, option, 3, export[:]); err != nil {
+		return false, err
+	}
+	// Advertise our finite payload bound even when not requested; clients which
+	// request this information commit to it on GO. Transmission also enforces it.
+	var blocks [14]byte
+	binary.BigEndian.PutUint16(blocks[:2], 3)
+	binary.BigEndian.PutUint32(blocks[2:6], 1)
+	binary.BigEndian.PutUint32(blocks[6:10], 4096)
+	binary.BigEndian.PutUint32(blocks[10:], MaxRequest)
+	if err := optionReplyPayload(w, option, 3, blocks[:]); err != nil {
+		return false, err
+	}
+	if requested[1] {
+		if err := optionReplyPayload(w, option, 3, []byte{0, 1}); err != nil {
+			return false, err
+		}
+	}
+	return true, optionReply(w, option, 1)
 }

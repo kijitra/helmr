@@ -29,7 +29,7 @@ func TestComputerAttachmentRecoveryPreservesOrdinaryFiles(t *testing.T) {
 }
 
 func TestComputerAttachmentRecoveryRejectsCustodyAndAmbiguity(t *testing.T) {
-	for _, kind := range []string{"config.json", "claim.json", "nbd.sock", "marker-symlink", "arena-symlink", "arena-file", "root-symlink", "missing-root"} {
+	for _, kind := range []string{"config.json", "claim.json", "nbd.sock", "nbd-owner.json", "marker-symlink", "arena-symlink", "arena-file", "root-symlink", "missing-root"} {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
 			arena := filepath.Join(root, "computer-retained-1")

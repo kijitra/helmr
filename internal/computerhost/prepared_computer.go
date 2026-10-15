@@ -33,16 +33,22 @@ func (p *PreparedMachines) releaseComputerDevice(id string, epoch int64) error {
 	}
 	ref := preparedMachineRef{id: id, epoch: epoch}
 	p.mu.Lock()
+	if p.preparingDevices[ref] {
+		p.mu.Unlock()
+		return errors.New("Computer device preparation is still in progress")
+	}
 	device := p.computerDevices[ref]
 	p.mu.Unlock()
 	if device == nil {
 		// A restarted Worker has no process-local owner. The helper deliberately
 		// quarantines on parent death; filesystem evidence must survive until an
 		// external reconciler establishes exclusive release.
-		if _, err := os.Lstat(filepath.Join(p.computerPreparationDirectory(id, epoch), "config.json")); err == nil {
-			return errors.New("computer attachment requires external reconciliation after owner loss")
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return err
+		for _, marker := range []string{"config.json", "claim.json", "nbd.sock", "nbd-owner.json"} {
+			if _, err := os.Lstat(filepath.Join(p.computerPreparationDirectory(id, epoch), marker)); err == nil {
+				return errors.New("computer attachment requires external reconciliation after owner loss")
+			} else if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
 		}
 		return nil
 	}

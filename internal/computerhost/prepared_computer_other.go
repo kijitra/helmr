@@ -1,4 +1,4 @@
-//go:build !linux
+//go:build !linux && (!darwin || !arm64)
 
 package computerhost
 
@@ -10,5 +10,5 @@ import (
 )
 
 func (p *PreparedMachines) prepareAllocationDevice(context.Context, workerapi.AllocationIdentity, workerapi.ComputerAllocationSource) (vm.ComputerDevice, error) {
-	return nil, errors.New("Computer allocation materialization requires Linux")
+	return nil, errors.New("Computer allocation materialization is unsupported on this host")
 }

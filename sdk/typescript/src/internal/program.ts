@@ -1,4 +1,4 @@
-export type RuntimeArchitecture = "x86_64"
+export type RuntimeArchitecture = "x86_64" | "aarch64"
 export interface DefinitionIndex {
   readonly apiVersion: "helmr.definition-index.v1"
   readonly agents: readonly {

@@ -33,10 +33,12 @@ async function main(): Promise<void> {
     await assembleRuntime({ bundle: args[0]!, installed: args[1]!, output: args[2]! })
     return
   }
-  if (mode !== "--analyze" || args.length !== 6) throw new Error("Program Compiler requires --bundle, --assemble or --analyze with complete inputs")
+  if (mode !== "--analyze" || (args.length !== 6 && args.length !== 7)) throw new Error("Program Compiler requires --bundle, --assemble or --analyze with complete inputs")
   const config = inspectCanonicalConfig(JSON.parse(await readFile(args[1]!, "utf8")))
+  const architecture = args[6] ?? "x86_64"
+  if (architecture !== "x86_64" && architecture !== "aarch64") throw new Error("Unsupported architecture")
   const compiled = await compileProgram({
-    architecture: "x86_64", root: resolve(args[0]!), config,
+    architecture, root: resolve(args[0]!), config,
     nodeVersion: args[2]!, payloadDigest: args[3]!, bundlePath: args[4]!,
   })
   for (const [path, contents] of compiled.files) {

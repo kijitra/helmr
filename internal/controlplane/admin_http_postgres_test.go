@@ -50,10 +50,11 @@ func (f httpPostgresFixture) sealWorkerPool(t *testing.T, groupID string, poolID
 	t.Helper()
 	platformID := dbtest.Digest("supply-http-runtime")
 	if _, err := f.queries.UpsertVMPlatform(t.Context(), db.UpsertVMPlatformParams{
+		Backend: "firecracker", Arch: "x86_64", Contract: "helmr.vm-runtime.v0",
 		ID:                platformID,
 		DescriptorDigest:  dbtest.Digest("supply-http-descriptor"),
-		FirecrackerDigest: dbtest.Digest("supply-http-firecracker"), FirecrackerVersion: "1.12.0",
-		SnapshotFormatVersion: "1.0.0", HostKernelRelease: "6.12.0",
+		FirecrackerDigest: pgtype.Text{String: dbtest.Digest("supply-http-firecracker"), Valid: true}, FirecrackerVersion: pgtype.Text{String: "1.12.0", Valid: true},
+		SnapshotFormatVersion: pgtype.Text{String: "1.0.0", Valid: true}, HostKernelRelease: "6.12.0",
 		KernelDigest: dbtest.Digest("supply-http-kernel"), InitramfsDigest: dbtest.Digest("supply-http-initramfs"),
 		RootfsDigest: dbtest.Digest("supply-http-rootfs"),
 	}); err != nil {

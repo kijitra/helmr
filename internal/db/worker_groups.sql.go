@@ -1143,38 +1143,46 @@ func (q *Queries) UpdateWorkerGroupDescription(ctx context.Context, arg UpdateWo
 
 const upsertVMPlatform = `-- name: UpsertVMPlatform :one
 INSERT INTO vm_platforms (
-    id, descriptor_digest,
+    id, descriptor_digest, backend, arch, contract, apple_vz,
     firecracker_digest, firecracker_version, snapshot_format_version,
     host_kernel_release, cpu_template_digest,
     kernel_digest, initramfs_digest, rootfs_digest, last_seen_at
 )
 VALUES (
     $1,
-    $2, $3,
-    $4, $5,
-    $6,
-    $7, $8,
-    $9, $10, now()
+    $2, $3, $4, $5, $6, $7,
+    $8, $9,
+    $10,
+    $11, $12,
+    $13, $14, now()
 )
 ON CONFLICT (id) DO UPDATE SET last_seen_at = now()
- WHERE vm_platforms.descriptor_digest = EXCLUDED.descriptor_digest
-   AND vm_platforms.firecracker_digest = EXCLUDED.firecracker_digest
-   AND vm_platforms.firecracker_version = EXCLUDED.firecracker_version
-   AND vm_platforms.snapshot_format_version = EXCLUDED.snapshot_format_version
+ WHERE vm_platforms.backend = EXCLUDED.backend
+   AND vm_platforms.arch = EXCLUDED.arch
+   AND vm_platforms.contract = EXCLUDED.contract
+   AND vm_platforms.apple_vz IS NOT DISTINCT FROM EXCLUDED.apple_vz
+   AND vm_platforms.descriptor_digest = EXCLUDED.descriptor_digest
+   AND vm_platforms.firecracker_digest IS NOT DISTINCT FROM EXCLUDED.firecracker_digest
+   AND vm_platforms.firecracker_version IS NOT DISTINCT FROM EXCLUDED.firecracker_version
+   AND vm_platforms.snapshot_format_version IS NOT DISTINCT FROM EXCLUDED.snapshot_format_version
    AND vm_platforms.host_kernel_release = EXCLUDED.host_kernel_release
    AND vm_platforms.cpu_template_digest IS NOT DISTINCT FROM EXCLUDED.cpu_template_digest
    AND vm_platforms.kernel_digest = EXCLUDED.kernel_digest
    AND vm_platforms.initramfs_digest = EXCLUDED.initramfs_digest
    AND vm_platforms.rootfs_digest = EXCLUDED.rootfs_digest
-RETURNING id, descriptor_digest, firecracker_digest, firecracker_version, snapshot_format_version, host_kernel_release, cpu_template_digest, kernel_digest, initramfs_digest, rootfs_digest, last_seen_at
+RETURNING id, descriptor_digest, firecracker_digest, firecracker_version, snapshot_format_version, host_kernel_release, cpu_template_digest, kernel_digest, initramfs_digest, rootfs_digest, last_seen_at, backend, arch, contract, apple_vz
 `
 
 type UpsertVMPlatformParams struct {
 	ID                    string      `json:"id"`
 	DescriptorDigest      string      `json:"descriptor_digest"`
-	FirecrackerDigest     string      `json:"firecracker_digest"`
-	FirecrackerVersion    string      `json:"firecracker_version"`
-	SnapshotFormatVersion string      `json:"snapshot_format_version"`
+	Backend               string      `json:"backend"`
+	Arch                  string      `json:"arch"`
+	Contract              string      `json:"contract"`
+	AppleVz               []byte      `json:"apple_vz"`
+	FirecrackerDigest     pgtype.Text `json:"firecracker_digest"`
+	FirecrackerVersion    pgtype.Text `json:"firecracker_version"`
+	SnapshotFormatVersion pgtype.Text `json:"snapshot_format_version"`
 	HostKernelRelease     string      `json:"host_kernel_release"`
 	CPUTemplateDigest     pgtype.Text `json:"cpu_template_digest"`
 	KernelDigest          string      `json:"kernel_digest"`
@@ -1186,6 +1194,10 @@ func (q *Queries) UpsertVMPlatform(ctx context.Context, arg UpsertVMPlatformPara
 	row := q.db.QueryRow(ctx, upsertVMPlatform,
 		arg.ID,
 		arg.DescriptorDigest,
+		arg.Backend,
+		arg.Arch,
+		arg.Contract,
+		arg.AppleVz,
 		arg.FirecrackerDigest,
 		arg.FirecrackerVersion,
 		arg.SnapshotFormatVersion,
@@ -1208,6 +1220,10 @@ func (q *Queries) UpsertVMPlatform(ctx context.Context, arg UpsertVMPlatformPara
 		&i.InitramfsDigest,
 		&i.RootfsDigest,
 		&i.LastSeenAt,
+		&i.Backend,
+		&i.Arch,
+		&i.Contract,
+		&i.AppleVz,
 	)
 	return i, err
 }

@@ -118,7 +118,7 @@ func TestVersionDeviceWritesBeyondDirtyBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	d := versionDevice{p}
+	d := versionDevice{LocalVersion: p}
 	data := bytes.Repeat([]byte{9}, 3*4096)
 	if n, err := d.WriteAt(t.Context(), data, 3); err != nil || n != len(data) {
 		t.Fatalf("write %d: %v", n, err)

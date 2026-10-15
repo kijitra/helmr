@@ -24,13 +24,19 @@ type computerImageInput struct {
 // ReadComputerImageInputs builds final-capacity disks inside the pinned Linux
 // builder. work is owned by the build invocation until bundle publication ends.
 func ReadComputerImageInputs(ctx context.Context, path, work, mkfs, config string) ([]bundle.ComputerSeed, []ObjectSource, error) {
+	return ReadComputerImageInputsForArchitecture(ctx, path, work, mkfs, config, definition.ArchitectureX8664)
+}
+func ReadComputerImageInputsForArchitecture(ctx context.Context, path, work, mkfs, config string, architecture definition.RuntimeArchitecture) ([]bundle.ComputerSeed, []ObjectSource, error) {
+	if !architecture.Valid() {
+		return nil, nil, fmt.Errorf("unsupported runtime architecture %q", architecture)
+	}
 	return readComputerImageInputs(ctx, path, func(source string) (bundle.ComputerSeedArtifact, string, error) {
 		dir, err := os.MkdirTemp(work, "image-*")
 		if err != nil {
 			return bundle.ComputerSeedArtifact{}, "", err
 		}
 		target := filepath.Join(dir, "disk.filepack")
-		artifact, err := buildComputerDisk(ctx, source, target, dir, mkfs, config)
+		artifact, err := buildComputerDiskForArchitecture(ctx, source, target, dir, mkfs, config, architecture)
 		if err != nil {
 			_ = os.RemoveAll(dir)
 			return bundle.ComputerSeedArtifact{}, "", err

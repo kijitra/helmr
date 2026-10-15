@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/helmrdotdev/helmr/internal/definition"
 	"github.com/helmrdotdev/helmr/internal/oci"
 	"github.com/helmrdotdev/helmr/internal/sha256sum"
 )
@@ -30,6 +31,14 @@ type installedLayoutDocument struct {
 // the exact digest-bound BuildKit named-context reference every later solve
 // uses, so no later graph can observe different bytes.
 func LayoutContext(directory string) (string, error) {
+	return LayoutContextForArchitecture(directory, definition.ArchitectureX8664)
+}
+
+func LayoutContextForArchitecture(directory string, architecture definition.RuntimeArchitecture) (string, error) {
+	target, err := architecture.OCIArchitecture()
+	if err != nil {
+		return "", err
+	}
 	if !filepath.IsAbs(directory) || filepath.Clean(directory) != directory {
 		return "", errors.New("OCI layout path is invalid")
 	}
@@ -55,7 +64,7 @@ func LayoutContext(directory string) (string, error) {
 		!sha256sum.ValidDigest(descriptor.Digest) ||
 		descriptor.Size < 1 || descriptor.Size > maxInstalledManifestSize ||
 		descriptor.Platform == nil ||
-		descriptor.Platform.OS != "linux" || descriptor.Platform.Architecture != "amd64" {
+		descriptor.Platform.OS != "linux" || descriptor.Platform.Architecture != target {
 		return "", errors.New("OCI layout manifest is invalid")
 	}
 	manifestPath := filepath.Join(directory, "blobs", "sha256", strings.TrimPrefix(descriptor.Digest, sha256sum.Prefix))

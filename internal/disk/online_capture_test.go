@@ -48,7 +48,7 @@ func TestOnlineCaptureAllowsRequestsDuringEncoding(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer p.Close()
-			device := versionDevice{p}
+			device := versionDevice{LocalVersion: p}
 			if _, err = device.WriteAt(t.Context(), []byte{2}, 7); err != nil {
 				t.Fatal(err)
 			}
@@ -100,6 +100,14 @@ func TestOnlineCaptureAllowsRequestsDuringEncoding(t *testing.T) {
 }
 
 func TestOnlineCaptureDoesNotSplitPressureFlushedRequest(t *testing.T) {
+	checkCaptureDoesNotSplitRequest(t, false)
+}
+func TestOnlineCaptureDoesNotSplitUnixDurableRequest(t *testing.T) {
+	checkCaptureDoesNotSplitRequest(t, true)
+}
+
+func checkCaptureDoesNotSplitRequest(t *testing.T, durable bool) {
+	t.Helper()
 	for _, trim := range []bool{false, true} {
 		t.Run(map[bool]string{false: "write", true: "trim"}[trim], func(t *testing.T) {
 			cfg, _ := localVersionFixture(t)
@@ -111,7 +119,7 @@ func TestOnlineCaptureDoesNotSplitPressureFlushedRequest(t *testing.T) {
 			defer p.Close()
 			if trim {
 				seed := bytes.Repeat([]byte{9}, 4*4096)
-				if _, err := (versionDevice{p}).WriteAt(t.Context(), seed, 0); err != nil {
+				if _, err := (versionDevice{LocalVersion: p, writeThrough: durable}).WriteAt(t.Context(), seed, 0); err != nil {
 					t.Fatal(err)
 				}
 				if _, err := p.Flush(t.Context()); err != nil {
@@ -129,7 +137,7 @@ func TestOnlineCaptureDoesNotSplitPressureFlushedRequest(t *testing.T) {
 			body := bytes.Repeat([]byte{9}, 3*4096)
 			requestDone := make(chan error, 1)
 			go func() {
-				device := versionDevice{p}
+				device := versionDevice{LocalVersion: p, writeThrough: durable}
 				var err error
 				if trim {
 					err = device.Trim(t.Context(), 3, len(body))
@@ -194,7 +202,7 @@ func TestOnlineCaptureWaitingForCommitDoesNotHoldRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if _, err := (versionDevice{p}).WriteAt(t.Context(), []byte{2}, 7); err != nil {
+	if _, err := (versionDevice{LocalVersion: p}).WriteAt(t.Context(), []byte{2}, 7); err != nil {
 		t.Fatal(err)
 	}
 	entered, release := make(chan struct{}), make(chan struct{})
@@ -214,7 +222,7 @@ func TestOnlineCaptureWaitingForCommitDoesNotHoldRequests(t *testing.T) {
 	<-started
 	// First cut is blocked during root persistence; a second capture is scheduled.
 	// The successor request must complete before either capture can finish.
-	if _, err := (versionDevice{p}).WriteAt(t.Context(), []byte{3}, 7); err != nil {
+	if _, err := (versionDevice{LocalVersion: p}).WriteAt(t.Context(), []byte{3}, 7); err != nil {
 		t.Fatal(err)
 	}
 	close(release)

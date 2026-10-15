@@ -44,11 +44,12 @@ func newSupplyFixture(t *testing.T) supplyFixture {
 		cpuConfigDigest: dbtest.Digest("worker-pool-cpu"),
 	}
 	if _, err := q.UpsertVMPlatform(t.Context(), db.UpsertVMPlatformParams{
+		Backend: "firecracker", Arch: "x86_64", Contract: "helmr.vm-runtime.v0",
 		ID:                    fixture.vmPlatformID,
 		DescriptorDigest:      dbtest.Digest("worker-pool-runtime-descriptor"),
-		FirecrackerDigest:     dbtest.Digest("worker-pool-firecracker"),
-		FirecrackerVersion:    "1.12.0",
-		SnapshotFormatVersion: "1.0.0",
+		FirecrackerDigest:     pgtype.Text{String: dbtest.Digest("worker-pool-firecracker"), Valid: true},
+		FirecrackerVersion:    pgtype.Text{String: "1.12.0", Valid: true},
+		SnapshotFormatVersion: pgtype.Text{String: "1.0.0", Valid: true},
 		HostKernelRelease:     "6.12.0",
 		KernelDigest:          dbtest.Digest("worker-pool-kernel"),
 		InitramfsDigest:       dbtest.Digest("worker-pool-initramfs"),
