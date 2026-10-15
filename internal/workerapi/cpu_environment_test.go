@@ -15,6 +15,9 @@ func TestCPUEnvironmentDigestAndValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if environment.Digest != "sha256:b3d42ad024bff274db82faf5a002f0066ddbde5d8cc2ee5fe550aef0f12f8ee1" {
+		t.Fatal("legacy CPU digest changed")
+	}
 	if err := environment.Validate(); err != nil {
 		t.Fatalf("validate canonical CPU environment: %v", err)
 	}

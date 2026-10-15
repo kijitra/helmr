@@ -358,15 +358,19 @@ type SecretVersion struct {
 type VMPlatform struct {
 	ID                    string             `json:"id"`
 	DescriptorDigest      string             `json:"descriptor_digest"`
-	FirecrackerDigest     string             `json:"firecracker_digest"`
-	FirecrackerVersion    string             `json:"firecracker_version"`
-	SnapshotFormatVersion string             `json:"snapshot_format_version"`
+	FirecrackerDigest     pgtype.Text        `json:"firecracker_digest"`
+	FirecrackerVersion    pgtype.Text        `json:"firecracker_version"`
+	SnapshotFormatVersion pgtype.Text        `json:"snapshot_format_version"`
 	HostKernelRelease     string             `json:"host_kernel_release"`
 	CPUTemplateDigest     pgtype.Text        `json:"cpu_template_digest"`
 	KernelDigest          string             `json:"kernel_digest"`
 	InitramfsDigest       string             `json:"initramfs_digest"`
 	RootfsDigest          string             `json:"rootfs_digest"`
 	LastSeenAt            pgtype.Timestamptz `json:"last_seen_at"`
+	Backend               string             `json:"backend"`
+	Arch                  string             `json:"arch"`
+	Contract              string             `json:"contract"`
+	AppleVz               []byte             `json:"apple_vz"`
 }
 
 type WorkerGroup struct {

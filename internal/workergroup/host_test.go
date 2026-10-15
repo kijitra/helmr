@@ -105,13 +105,17 @@ func TestVMPlatformParamsDeriveCompleteProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := vmPlatformParams(profile)
+	got, err := vmPlatformParams(profile)
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := db.UpsertVMPlatformParams{
+		Backend: "firecracker", Arch: "x86_64", Contract: "helmr.vm-runtime.v0",
 		ID:                    profile.ID,
 		DescriptorDigest:      profile.VMRuntimeDescriptorDigest,
-		FirecrackerDigest:     profile.FirecrackerDigest,
-		FirecrackerVersion:    profile.FirecrackerVersion,
-		SnapshotFormatVersion: profile.SnapshotFormatVersion,
+		FirecrackerDigest:     pgtype.Text{String: profile.FirecrackerDigest, Valid: true},
+		FirecrackerVersion:    pgtype.Text{String: profile.FirecrackerVersion, Valid: true},
+		SnapshotFormatVersion: pgtype.Text{String: profile.SnapshotFormatVersion, Valid: true},
 		HostKernelRelease:     profile.HostKernelRelease,
 		CPUTemplateDigest:     pgtype.Text{String: profile.CPUTemplate.Digest, Valid: true},
 		KernelDigest:          profile.KernelDigest,

@@ -2,7 +2,7 @@
 
 Status: the repaired Unix NBD/LocalVersion checkpoint experiment passed 20/20
 physical cycles on this M1 Max. ARM64 artifact contracts and native disk
-preparation are implemented. Full macOS Worker support and everyday-host
+preparation and [native runtime registration](macos-runtime-identity.md) are implemented. Full macOS Worker support and everyday-host
 qualification are not established.
 
 ## Outcome and boundaries
@@ -327,3 +327,15 @@ it does not qualify the production Agent or the complete fault matrix.
 The native macOS CLI was also built and its `--help` executed locally. It still
 needs a local Control Plane and functioning Worker; a CLI binary is not a running
 Helmr installation. No remote service login or external model call was made.
+
+
+## Native runtime registration (2026-10-15)
+
+Backend-tagged Apple VZ identity, CPU evidence matching, a new database migration
+and immutable pool matching are implemented. Existing Firecracker identity bytes
+remain unchanged. PostgreSQL 18.6 migration, conflict, NULL-edge, downgrade and
+reactivation tests pass with existing lifecycle/admin API regression checks:
+42 top-level tests, 260 test records, none skipped, race detector enabled.
+Both independent reviewers report no remaining actionable finding for this
+slice. See [scope, compatibility and the same-boot limitation](macos-runtime-identity.md).
+This does not enable the native Worker or publish native checkpoints.
