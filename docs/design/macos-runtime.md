@@ -45,7 +45,7 @@ distinguish intended targets from verified configurations.
 | Persistence | `internal/db/schema/migrations/000001_initial.up.sql` requires Firecracker identity columns | Add a new migration and regenerate queries/catalog; do not edit the initial migration |
 | Guest artifacts | `images/`, `internal/definition/computer_spec.go`, compiler analysis, artifact ELF verification assume x86_64 | Produce and verify Linux arm64 boot/runtime/seed artifacts and OCI platforms end to end |
 | Computer disk | `internal/disk/`, `internal/nbd/`, attachment recovery use Linux devices | Provide a macOS attachment implementation preserving the versioned disk capture contract |
-| Network/secrets | `internal/firecracker/` owns namespaces, datapath, translation and secret transport | Implement equivalent per-owner host-side enforcement, qualification and cleanup |
+| Network/secrets | `internal/secretproxy/` and Worker client own credential mediation; `internal/firecracker/` binds them to Linux namespaces, datapath and transparent routing | Reuse mediation and authority callbacks; adapt VM traffic capture, original-destination delivery, enforcement and cleanup to macOS |
 | Local composition | `dev/local/start.sh` starts the Console/CP and backing services, requires S3 URIs, and synthesizes a descriptor | Add a complete local composition with real descriptors, Dispatcher and Worker; never reuse the synthetic descriptor for execution |
 
 The work is not an architecture string replacement. The build/compiler,
@@ -116,11 +116,12 @@ flowchart TB
     W["Worker【拡張】<br/>実行権限・CPU・メモリを管理"]
     DB[("ローカル管理データ<br/>PostgreSQL：実行状態<br/>ClickHouse：ログ履歴")]
     STORE[("ローカルS3互換ストレージ<br/>CAS / platform store")]
+    PROXY["既存のsecretproxy【共用】<br/>送信先確認・APIキー差し込み"]
 
     subgraph NEW["今回追加するmacOS実行基盤"]
       B["macOSバックエンド<br/>起動・保存・復元・後片付け"]
       H["署名済みVMヘルパー<br/>Apple Virtualization.framework"]
-      NET["通信・秘密情報の制御"]
+      NET["macOS通信アダプター【新規】<br/>通信の捕捉・迂回防止・停止"]
     end
 
     subgraph VM["ワークロードを隔離するLinux ARM64 VM"]
@@ -136,15 +137,18 @@ flowchart TB
     CP <--> DB
     CP <--> STORE
     W <-->|暗号化・保存・取得| STORE
+    W -->|既存の権限確認・秘密情報取得| PROXY
     W --> B
     B --> H
     B -->|所有者ごとの通信設定| NET
     B <-->|整合したディスク状態を取得| DISK
     H <-->|制御通信| G
-    A <-->|許可された通信のみ| NET
+    A <-->|VMの外向き通信| NET
+    NET <-->|保護対象ポートの通信| PROXY
   end
 
-  NET <--> API["外部AI APIなど<br/>利用する場合"]
+  PROXY <--> API["外部AI APIなど<br/>利用する場合"]
+  NET <-->|その他の許可通信| API
 ```
 
 The helper alone holds VZ objects and device handles. Use a private, versioned
@@ -160,6 +164,35 @@ Worker owns workload authority, allocations, encryption and CP interactions.
 The CP remains the authority for continuation and accepted checkpoint identity.
 Neither a local journal nor a helper acknowledgment authorizes a workload to
 run. Reuse `vm.WorkloadBinding` and existing grant/fence exchanges.
+
+### Reuse existing secret mediation
+
+macOS does not introduce a new secret policy. Retain the existing host-side
+credential mediation so protected API keys stay outside the workload VM and
+are resolved only for the authorized runtime and origin. Reuse
+`internal/secretproxy/` for origin/TLS checks, header replacement, admission
+bounds and cancellation, and
+`internal/workerclient/secret_proxy_transport.go` for CP preparation and
+resolution callbacks bound to the immutable instance identity. The proxy's
+portable tests are useful regression coverage; this proposal does not claim
+native macOS integration has been qualified.
+
+The OS-specific part is the attachment and transport. Today,
+`internal/firecracker/network_policy_linux.go` installs network namespaces,
+TAP/datapath ownership, nftables and transparent routing;
+`secret_egress_linux.go` creates the transparent listener. The macOS adapter
+must deliver captured connections to the shared proxy with the same trusted
+original numeric destination that `Proxy.Serve` expects in `LocalAddr`.
+Destination metadata must come from the host-owned packet/connection binding,
+never a guest-supplied proxy header. Installing an ordinary HTTP proxy and
+setting guest environment variables does not enforce this contract.
+
+The adapter also owns routing for non-captured allowed traffic, blocks bypasses,
+and couples all paths to current owner/generation and VM lifecycle. Closing the
+shared proxy remains part of fencing; the adapter must stop its other paths as
+well. Qualify these boundaries before deciding whether any small transport
+interface extraction is needed. Do not duplicate origin/credential policy in
+a macOS-only implementation.
 
 Networking must default to deny before guest execution. A VZ NAT attachment
 alone is insufficient: qualify per-owner isolation, private/loopback/metadata
