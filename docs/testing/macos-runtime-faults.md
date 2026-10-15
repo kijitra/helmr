@@ -1,6 +1,8 @@
 # macOS runtime fault-test specification
 
-Status: test design, not implemented tests or a passing report.
+Status: full-runtime test design, not a passing qualification report. The separate
+[bounded safety probe](../implementation/macos-host-safety.md#validation-evidence-2026-10-15)
+now has synthetic and M1 Max physical evidence; it does not complete this matrix.
 Scope: the [macOS runtime proposal](../design/macos-runtime.md).
 
 ## Preliminary capability observation

@@ -1,6 +1,7 @@
 # macOS local runtime proposal
 
-Status: design for review; no macOS Worker is implemented by this change.
+Status: design and standalone safety probe; no macOS Worker is implemented by
+this change. See [current probe evidence](../implementation/macos-host-safety.md#validation-evidence-2026-10-15).
 Baseline: upstream `2148c4416c4ea16e81218043af79b3f3d523fed7`.
 
 ## Outcome and acceptance boundary
@@ -23,7 +24,7 @@ at admission.
 
 | Target | Required qualification | Current evidence |
 | --- | --- | --- |
-| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | Minimal API configuration probe only; no VM restore |
+| M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | Bounded offline Linux `/init` execution-attempt smoke and cleanup; no VM restore |
 | M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | Not run; exact model, RAM and macOS to be recorded |
 | Apple Silicon Mac mini | Same native arm64 backend; qualify each claimed chip/OS/RAM configuration | Not run; exact model, chip, RAM and macOS to be recorded |
 
@@ -54,11 +55,13 @@ artifact verifier, scheduler, database and checkpoint contracts all participate.
 ## Candidate selection and first experiment
 
 Prefer a native arm64 Linux guest controlled by Apple's Virtualization.framework
-(VZ), subject to the gates below. A small signed helper owns each VM; Go owns
-the existing worker protocols. A helper process boundary avoids introducing a
-Swift event-loop requirement into every Go service. Bindings versus a helper
-remain an implementation choice to settle after the experiment, not a new
-public API promise.
+(VZ), subject to the gates below. A small signed Go helper owns each VM through the existing
+`Code-Hex/vz/v3` binding, pinned to v3.8.0 for the first experiment; Go retains
+the existing worker protocols. One VM per short-lived helper isolates native
+callback waits and finalizer-managed handles from the Worker. The supervisor
+owns deadlines and quarantine; a timed-out binding call is not cancellation.
+See the [OSS comparison](macos-runtime-oss.md) for reuse boundaries and the
+[host safety implementation](../implementation/macos-host-safety.md) for gates.
 
 Apple exposes save/restore on Apple Silicon starting with macOS 14. The API
 requires a paused VM when saving and restores into a paused state. Save files
@@ -120,7 +123,8 @@ flowchart TB
 
     subgraph NEW["今回追加するmacOS実行基盤"]
       B["macOSバックエンド<br/>起動・保存・復元・後片付け"]
-      H["署名済みVMヘルパー<br/>Apple Virtualization.framework"]
+      H["小さな署名済みGoヘルパー【新規】"]
+      VZ["Code-Hex/vz【既存OSSを利用】<br/>Apple Virtualization.framework"]
       NET["macOS通信アダプター【新規】<br/>通信の捕捉・迂回防止・停止"]
     end
 
@@ -140,9 +144,10 @@ flowchart TB
     W -->|既存の権限確認・秘密情報取得| PROXY
     W --> B
     B --> H
+    H --> VZ
     B -->|所有者ごとの通信設定| NET
     B <-->|整合したディスク状態を取得| DISK
-    H <-->|制御通信| G
+    VZ <-->|制御通信| G
     A <-->|VMの外向き通信| NET
     NET <-->|保護対象ポートの通信| PROXY
   end
@@ -375,14 +380,20 @@ OAuth/model/Slack setup is optional and never needed by deterministic tests.
 | 4 | Upstream contribution | Reviewed implementation, Linux regression evidence and documented macOS limits |
 
 These are sequential acceptance gates, not a preapproved stacked-PR plan.
-This first PR contains design and fault-test specifications only. It does not
-claim any gate has passed. A later implementation PR should be scoped to the
-next proven gate rather than advertise full macOS support prematurely.
+This PR contains the design, full-runtime fault specifications and a bounded
+standalone safety probe using an existing OSS binding. No full gate has passed.
+Further implementation must prove the next gate before advertising complete
+macOS support.
 
 ## Evidence and open decisions
 
-On the inspected M1 Max/macOS 26.6.2 host, a signed, minimal Linux VZ
-configuration passed both configuration validation and save/restore support
+The current [probe evidence](../implementation/macos-host-safety.md#validation-evidence-2026-10-15)
+records the Linux kernel reaching its `/init` execution attempt, fixed-volume exhaustion, controller-death
+admission rejection and verified cleanup through the signed Go helper. These
+results do not establish a coherent checkpoint or a running Helmr Worker.
+
+The earlier API-only baseline on the M1 Max/macOS 26.6.2 host used a signed, minimal Linux VZ
+configuration that passed configuration validation and save/restore support
 validation. It used `/dev/null` as a kernel path and did not boot a guest or
 include production devices. This proves only that the API-level capability
 probe succeeds; it does not prove that a Linux workload can be restored.
