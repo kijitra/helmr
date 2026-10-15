@@ -86,17 +86,48 @@ Revisit the backend choice instead of weakening checkpoint behavior.
 
 ## Ownership and data flow
 
+The proposed deployment below places execution and backing services on one Mac.
+Labels distinguish the existing Worker to extend from the new macOS components.
+Backing services and the image builder may use a dedicated local Linux VM, as
+described in [Complete local composition](#complete-local-composition).
+
 ```mermaid
-flowchart LR
-  UI[Console / CLI] --> CP[Control Plane + PostgreSQL]
-  CP <--> D[Dispatcher]
-  CP <--> W[Worker: authority + reservations]
-  W --> B[Qualified backend + durable owner journal]
-  B --> H[Signed VM helper]
-  H --> G[arm64 Linux: guestd + workload]
-  B --> N[Per-owner egress + secret transport]
-  B --> V[Versioned Computer disk attachment]
-  W <--> S[Local S3-compatible CAS + platform store]
+flowchart TB
+  subgraph MAC["あなたのMac"]
+    UI["操作画面・CLI"]
+    CP["Helmr管理層<br/>Control Plane / Dispatcher<br/>仕事・進捗・再開許可を管理"]
+    W["Worker【拡張】<br/>実行権限・CPU・メモリを管理"]
+    DB[("ローカル管理データ<br/>PostgreSQL / ClickHouse")]
+    STORE[("ローカルS3互換ストレージ<br/>CAS / platform store")]
+
+    subgraph NEW["今回追加するmacOS実行基盤"]
+      B["macOSバックエンド<br/>起動・保存・復元・後片付け"]
+      H["署名済みVMヘルパー<br/>Apple Virtualization.framework"]
+      NET["通信・秘密情報の制御"]
+    end
+
+    subgraph VM["ワークロードを隔離するLinux ARM64 VM"]
+      G["guestd<br/>VM内の制御役"]
+      A["エージェント・開発ツール"]
+      DISK[("作業ファイル")]
+      G --> A
+      A --> DISK
+    end
+
+    UI <--> CP
+    CP <--> W
+    CP <--> DB
+    CP <--> STORE
+    W <-->|暗号化・保存・取得| STORE
+    W --> B
+    B --> H
+    B -->|所有者ごとの通信設定| NET
+    B <-->|整合したディスク状態を取得| DISK
+    H <-->|制御通信| G
+    A <-->|許可された通信のみ| NET
+  end
+
+  NET <--> API["外部AI APIなど<br/>利用する場合"]
 ```
 
 The helper alone holds VZ objects and device handles. Use a private, versioned
@@ -123,6 +154,50 @@ host security boundary. If enforcement dies, revoke egress and hold/terminate
 the VM. Never advertise readiness while enforcement is unavailable.
 
 ## Checkpoint state and crash rules
+
+The sequence shows successful suspension and resume. The Worker coordinates
+storage publication and authority with the Control Plane; the backend owns
+physical VM capture, restore and exclusion. Failure and ambiguous-response
+behavior follows the state rules below and the
+[fault-test specification](../testing/macos-runtime-faults.md).
+
+```mermaid
+sequenceDiagram
+  actor U as 利用者
+  participant C as Helmr管理層
+  participant W as Worker
+  participant B as macOSバックエンド
+  participant V as Linux VM
+  participant S as ローカル保存先
+
+  V->>C: 質問・入力待ち（Worker経由）
+  C->>W: 休止を指示
+  W->>B: 実行を保留して保存準備
+  B->>V: エージェントと書き込みを停止
+  B-->>W: 同じ時点のメモリ・CPU状態・ディスクを取得
+  W->>S: 暗号化して保存・整合性を検証
+  S-->>W: 保存完了
+  W->>C: 保存した状態を登録
+  C-->>W: 登録確定
+  W->>B: 元VMの終了を指示
+  B->>V: VMを終了
+  B-->>W: VMと残存資源の終了を確認
+  Note over W,V: 終了を確認して実行用メモリなどを解放
+
+  U->>C: 質問に回答
+  C->>W: 保存状態から復元を指示
+  W->>S: 保存状態を取得・互換性と整合性を検証
+  W->>B: 排他的な所有権で復元
+  B->>V: 新しいVMプロセスへ復元
+  Note over B,V: 制御通信だけ再開、エージェントは停止中
+  W->>C: 継続するための実行許可を取得
+  C-->>W: 新しい実行許可
+  W->>V: 許可を設定（バックエンド経由）
+  V-->>W: 設定・有効化の確認
+  W->>B: 実行の保留を解除
+  B->>V: エージェントと許可された通信を再開
+  V-->>U: 先ほどの処理の続きから応答（管理層経由）
+```
 
 The names below describe local design states, not new CP API statuses.
 
