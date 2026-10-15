@@ -130,7 +130,7 @@ func ValidateTemplateManifest(m TemplateManifest) error {
 	if err := ValidateUnusedPolicy(m.DeleteAfterUnusedMs, m.DeleteAfterUnusedNever); err != nil {
 		return err
 	}
-	if m.Seed.Profile != ComputerSeedProfile || m.Seed.MediaType != ComputerSeedMediaType {
+	if _, err := ArchitectureForSeedProfile(m.Seed.Profile); err != nil || m.Seed.MediaType != ComputerSeedMediaType {
 		return errors.New("unsupported Computer seed contract")
 	}
 	if !computerSeedDigest.MatchString(m.Seed.ArtifactDigest) {

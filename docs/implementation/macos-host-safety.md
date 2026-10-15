@@ -221,3 +221,43 @@ ARM64 runtime/seed/compiler pipeline, and a genuine local service composition.
 The [current candidate record](../testing/evidence/macos-localversion-candidate.json)
 binds source-file, helper and input hashes to these checks. It explicitly records
 physical and Worker gates as unverified.
+
+## Local-only continuation
+
+The operator explicitly reaffirmed that execution and storage must stay on this
+Mac. A remote Linux worker is not an acceptable substitute. Origin was fetched
+at `e4fdd49918962cc4f218b71d8abb32af80da362b`; the work branch was clean and matched
+origin. No other repository is refreshed or modified. Full Review remains in
+force; no merge, deployment, spending or host-settings changes are authorized.
+
+Continue the product integration while physical admission is unavailable. The
+native qualification gate controls enabling the backend and claiming readiness;
+it does not prohibit implementing and independently testing downstream code.
+First extend the producer/validator architecture contract consistently across
+Computer definitions, runtime ELF verification and compilation. Preserve existing
+x86_64 defaults and serialized identities. ARM64 metadata must never authorize
+x86_64 binaries or mismatched seed/image platforms. Continue native backend,
+isolated verification and local composition afterward. Completion requires a
+real local Agent turn with an artifact and restart/resume evidence on this Mac.
+
+### ARM64 artifact contract implementation
+
+The compiler now takes an explicit canonical Runtime target, keeping its legacy
+six-argument invocation on x86_64. Metadata production binds that independently
+selected target to every image and seed. OCI boundaries map aarch64 to arm64;
+ELF validation requires EM_AARCH64 and the ARM loader throughout the dependency
+closure. Existing x86 golden bytes and digests are unchanged. The CLI's pinned
+builder image is still x86-only; this change does not silently select an image
+based on the Mac CPU or enable an unqualified Worker.
+
+Validation: Go definition/artifact/verifier/bundle/builder/platform suites pass
+on Darwin. TypeScript compiler/source suites pass (21 tests), including the
+actual generated entry's legacy and explicit target invocations; compiler
+TypeScript checking passes. A shared compiler-produced ARM fixture passes Go
+parsing, metadata production, bundle parsing and runtime admission. Wrong seed,
+Program, Runtime, OCI and ELF architectures are rejected. Linux amd64 and arm64
+builder test binaries cross-compile; they have not been executed on Linux.
+Independent Codex review found no actionable issue. Cross-model review remains
+unavailable. Temporary checksum-verified Bun 1.3.13 and Node 24.21.0 were used;
+no system toolchain or shell configuration was changed. Locked package install
+used `--ignore-scripts`.

@@ -80,3 +80,14 @@ test("packed SDK exposes coherent Agent handler and preparation types", async ()
    expect({ status: result.status, output: result.stdout + result.stderr }).toEqual({ status: 0, output: '' })
  } finally { await f.close() }
 })
+
+
+test("generated compiler entry accepts explicit ARM and preserves legacy x86 arguments",async()=>{
+ const f=await fixture({"agents/main.ts":`import{template,image}from'@helmr/sdk';export const workspace=template({id:'workspace',image:image('root').from('alpine:3.23'),resources:{cpu:1,memory:'512MiB'}})`},true)
+ try{
+  for(const architecture of [undefined,"x86_64","aarch64"] as const){
+   const result=await analyzeProject({root:f.root,architecture,config:{dirs:["agents"],ignorePatterns:[]}})
+   expect(result.buildPlan.definitions[0].manifest.imageBuild.images[0].platform).toEqual({os:"linux",architecture:architecture??"x86_64"})
+  }
+ }finally{await f.close()}
+})

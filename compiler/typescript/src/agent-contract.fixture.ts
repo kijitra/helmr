@@ -1,7 +1,7 @@
 import { agent, template, image, triggers } from "@helmr/sdk"
 import { analyze } from "./compile"
 
-export function agentContractFixture() {
+export function agentContractFixture(architecture: "x86_64" | "aarch64" = "x86_64") {
   const workspace = template({
     id: "workspace", image: image("base").from("ubuntu:24.04"),
     resources: { cpu: 2, memory: "4GiB", disk: "16GiB" },
@@ -15,5 +15,5 @@ export function agentContractFixture() {
     maxTurnDuration: "5m", closeAfterIdle: "1h",
     triggers: [triggers.cron("nightly", "0 0 * * *", { timezone: "Asia/Tokyo", input: [{ type: "text", text: "Run the nightly check." }] })],
   })
-  return analyze({ architecture: "x86_64", exports: [{ modulePath: "helmr/app/entry-0.mjs", exportName: "coder", value: coder }] })
+  return analyze({ architecture, exports: [{ modulePath: "helmr/app/entry-0.mjs", exportName: "coder", value: coder }] })
 }

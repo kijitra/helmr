@@ -516,6 +516,9 @@ func resolveRuntimeDependency(
 }
 
 func runtimeELFTarget(architecture definition.RuntimeArchitecture) (elf.Machine, string, error) {
+	if architecture == definition.ArchitectureAArch64 {
+		return elf.EM_AARCH64, artifact.RuntimeMountPath + "/lib/ld-linux-aarch64.so.1", nil
+	}
 	if architecture == definition.ArchitectureX8664 {
 		return elf.EM_X86_64, artifact.RuntimeMountPath + "/lib/ld-linux-x86-64.so.2", nil
 	}

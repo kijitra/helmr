@@ -99,7 +99,7 @@ func run(ctx context.Context, arguments []string) error {
 		return err
 	}
 	defer os.RemoveAll(imageWork)
-	images, objects, err := builder.ReadComputerImageInputs(ctx, cleanAbsolute(*computerImageInput), imageWork, cleanAbsolute(*mkfs), cleanAbsolute(*filesystemConfig))
+	images, objects, err := builder.ReadComputerImageInputsForArchitecture(ctx, cleanAbsolute(*computerImageInput), imageWork, cleanAbsolute(*mkfs), cleanAbsolute(*filesystemConfig), runtime.Architecture)
 	if err != nil {
 		return err
 	}

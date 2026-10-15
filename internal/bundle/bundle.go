@@ -197,11 +197,10 @@ func validate(bundle Manifest) error {
 			TargetOS,
 		)
 	}
-	if bundle.Platform.Architecture != definition.ArchitectureX8664 {
+	if !bundle.Platform.Architecture.Valid() {
 		return fmt.Errorf(
-			"deployment bundle platform architecture = %q, want %q",
+			"deployment bundle platform architecture %q is unsupported",
 			bundle.Platform.Architecture,
-			definition.ArchitectureX8664,
 		)
 	}
 	if err := validatePlan(bundle.Plan); err != nil {
@@ -303,7 +302,8 @@ func validateBundleComputerSeeds(bundle Manifest) error {
 		if err := validateBundleObject(object, fmt.Sprintf("computerSeeds[%d]", index)); err != nil {
 			return err
 		}
-		if artifact.Profile != definition.ComputerSeedProfile {
+		profile, err := bundle.Platform.Architecture.SeedProfile()
+		if err != nil || artifact.Profile != profile {
 			return fmt.Errorf("deployment disk profile %q is unsupported", artifact.Profile)
 		}
 		if artifact.MediaType != definition.ComputerSeedMediaType {

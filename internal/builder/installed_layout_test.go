@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/helmrdotdev/helmr/internal/definition"
 	"github.com/helmrdotdev/helmr/internal/oci"
 	"github.com/helmrdotdev/helmr/internal/sha256sum"
 )
@@ -70,4 +71,18 @@ func writeInstalledLayoutFixture(t *testing.T, root string, platform *oci.Platfo
 		}
 	}
 	return digest
+}
+
+func TestLayoutContextRequiresSelectedArchitecture(t *testing.T) {
+	for _, target := range []definition.RuntimeArchitecture{definition.ArchitectureX8664, definition.ArchitectureAArch64} {
+		for _, actual := range []string{"amd64", "arm64"} {
+			root := t.TempDir()
+			writeInstalledLayoutFixture(t, root, &oci.Platform{OS: "linux", Architecture: actual})
+			_, err := LayoutContextForArchitecture(root, target)
+			expected, _ := target.OCIArchitecture()
+			if (err == nil) != (actual == expected) {
+				t.Fatalf("%s layout for %s: %v", actual, target, err)
+			}
+		}
+	}
 }

@@ -8,10 +8,10 @@ import (
 	"github.com/helmrdotdev/helmr/internal/definition"
 )
 
-func BuildProgramMetadata(plan definition.BuildPlan, runtimeIndex DefinitionIndex,
+func BuildProgramMetadata(architecture definition.RuntimeArchitecture, plan definition.BuildPlan, runtimeIndex DefinitionIndex,
 	computerSeeds map[string]definition.ComputerSeed, configResultDigest, runtimeDigest string,
 ) (ProgramMetadata, error) {
-	if err := definition.ValidateBuildPlan(plan); err != nil {
+	if err := definition.ValidateBuildPlanTarget(plan, architecture); err != nil {
 		return ProgramMetadata{}, err
 	}
 	declarations := make([]ProgramDefinition, 0, len(plan.Definitions))
@@ -25,7 +25,7 @@ func BuildProgramMetadata(plan definition.BuildPlan, runtimeIndex DefinitionInde
 			if !exists {
 				return ProgramMetadata{}, fmt.Errorf("computer %q has no seed result", input.DeclaredID)
 			}
-			if image.Architecture != definition.ArchitectureX8664 || image.SizeBytes > definition.MaxComputerSeedBytes {
+			if image.Architecture != architecture || image.SizeBytes > definition.MaxComputerSeedBytes {
 				return ProgramMetadata{}, errors.New("unsupported Computer seed architecture or size")
 			}
 			if err := cas.ValidateDescriptor(cas.Descriptor{Digest: image.Digest, SizeBytes: image.SizeBytes, MediaType: image.MediaType}); err != nil {
@@ -42,7 +42,7 @@ func BuildProgramMetadata(plan definition.BuildPlan, runtimeIndex DefinitionInde
 		}
 		declarations = append(declarations, cloneProgramDefinition(d))
 	}
-	index := ProgramMetadata{Architecture: definition.ArchitectureX8664, ConfigResultDigest: configResultDigest,
+	index := ProgramMetadata{Architecture: architecture, ConfigResultDigest: configResultDigest,
 		Definitions: declarations, RuntimeContract: definition.RuntimeContract, RuntimeDigest: runtimeDigest}
 	if err := ValidateProgramMetadata(index); err != nil {
 		return ProgramMetadata{}, err

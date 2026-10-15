@@ -27,6 +27,7 @@ func ProgramMetadata(t *testing.T) artifact.ProgramMetadata {
 	t.Helper()
 	plan := BuildPlan()
 	index, err := artifact.BuildProgramMetadata(
+		definition.ArchitectureX8664,
 		plan,
 		DefinitionIndex(),
 		map[string]definition.ComputerSeed{

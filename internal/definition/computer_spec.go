@@ -10,12 +10,14 @@ import (
 const (
 	RuntimeContract            = "helmr.runtime.v0"
 	ArchitectureX8664          = RuntimeArchitecture("x86_64")
+	ArchitectureAArch64        = RuntimeArchitecture("aarch64")
 	MaxComputerSeedBytes int64 = 17179869184
 
 	// ComputerSeedProfile and ComputerSeedMediaType identify the client-built
 	// Computer seed disk format.
-	ComputerSeedProfile   = "linux-amd64-ext4-v1"
-	ComputerSeedMediaType = "application/vnd.helmr.computer.seed.v0+filepack"
+	ComputerSeedProfile        = "linux-amd64-ext4-v1"
+	ComputerSeedProfileAArch64 = "linux-arm64-ext4-v1"
+	ComputerSeedMediaType      = "application/vnd.helmr.computer.seed.v0+filepack"
 )
 
 type RuntimeArchitecture string

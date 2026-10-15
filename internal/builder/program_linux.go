@@ -215,6 +215,7 @@ func BuildPreparedProgram(
 		verification,
 		configDigest,
 		input.Runtime.Digest,
+		input.Runtime.Architecture,
 		input.ComputerSeeds,
 		input.Compiler,
 		input.RuntimeMetadata.NodeVersion,
@@ -268,7 +269,7 @@ func analyzePayload(
 	verificationFrame, err := runAnalysisCommand(ctx, analysisCommand{
 		NodePath: input.NodePath,
 		Arguments: append(append([]string{}, flags...), input.ProgramCompiler,
-			"--analyze", input.ProjectDirectory, configPath, input.RuntimeMetadata.NodeVersion, inputDigest, input.BundlePath, compilerOutput),
+			"--analyze", input.ProjectDirectory, configPath, input.RuntimeMetadata.NodeVersion, inputDigest, input.BundlePath, compilerOutput, string(input.Runtime.Architecture)),
 		Directory: filepath.Dir(input.ProjectDirectory), WorkDir: work,
 	})
 	if err != nil {

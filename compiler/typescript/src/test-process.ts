@@ -30,7 +30,7 @@ export function runEntry(name: string, args: string[]) {
 export function runHostConfig(root: string) {
   return run(new URL("../../../internal/hostconfig/config-evaluator.mjs", import.meta.url), [], [root])
 }
-export async function analyzeProject(options: {root: string; architecture: "x86_64"; config: DiscoveryConfig}) {
+export async function analyzeProject(options: {root: string; architecture?: "x86_64" | "aarch64"; config: DiscoveryConfig}) {
   const output = await mkdtemp(resolve(tmpdir(), "helmr-source-result-"))
   try {
     const configPath = resolve(output,"config.json")
@@ -41,7 +41,7 @@ export async function analyzeProject(options: {root: string; architecture: "x86_
     const dependencies = JSON.parse(await readFile(resolve(bundle,"install/package.json"),"utf8")).dependencies
     if (Object.keys(dependencies).length !== 0) throw new Error("analyzeProject fixture requires explicit runtime-install qualification for external packages")
     const payload = resolve(bundle,"payload")
-    const verification = runEntry("program-compiler", ["--analyze",payload,configPath,nodeVersion,`sha256:${"1".repeat(64)}`,resolve(bundle,"bundle.json"),output])
+    const verification = runEntry("program-compiler", ["--analyze",payload,configPath,nodeVersion,`sha256:${"1".repeat(64)}`,resolve(bundle,"bundle.json"),output,...(options.architecture === undefined ? [] : [options.architecture])])
     if (verification.outcome !== "succeeded") throw new Error(verification.error.message)
     const result = JSON.parse(await readFile(resolve(output,"helmr/compiler-result.json"),"utf8"))
     return {buildPlan: JSON.parse(verification.files.find((file: {path: string}) => file.path === "helmr/build-plan.json").content),definitionIndex:JSON.parse(verification.files.find((file: {path: string}) => file.path === "helmr/definition-index.json").content),modules:JSON.parse(await readFile(resolve(bundle,"bundle.json"),"utf8")).entries.map((entry: {sourcePath:string})=>entry.sourcePath),result}

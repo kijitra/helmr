@@ -18,6 +18,13 @@ import (
 // only a capacity-sized packed disk; temporary raw and expanded files are removed
 // before return. The caller publishes the returned config with the artifact.
 func buildSeed(ctx context.Context, image, target, scratch, mkfs, config string, capacity int64) (disk.Seed, error) {
+	return buildSeedForArchitecture(ctx, image, target, scratch, mkfs, config, capacity, definition.ArchitectureX8664)
+}
+func buildSeedForArchitecture(ctx context.Context, image, target, scratch, mkfs, config string, capacity int64, architecture definition.RuntimeArchitecture) (disk.Seed, error) {
+	ociArchitecture, err := architecture.OCIArchitecture()
+	if err != nil {
+		return disk.Seed{}, err
+	}
 	if capacity <= 0 || capacity%4096 != 0 {
 		return disk.Seed{}, errors.New("invalid seed capacity")
 	}
@@ -44,8 +51,8 @@ func buildSeed(ctx context.Context, image, target, scratch, mkfs, config string,
 	if err := errors.Join(unpackErr, source.Close()); err != nil {
 		return disk.Seed{}, err
 	}
-	if metadata.ManifestCount != 1 || metadata.Platform == nil || metadata.Platform.OS != "linux" || metadata.Platform.Architecture != "amd64" {
-		return disk.Seed{}, errors.New("seed image must be linux/amd64")
+	if metadata.ManifestCount != 1 || metadata.Platform == nil || metadata.Platform.OS != "linux" || metadata.Platform.Architecture != ociArchitecture {
+		return disk.Seed{}, fmt.Errorf("seed image must be linux/%s", ociArchitecture)
 	}
 	size, err := filesystem.LogicalBytes()
 	if err != nil {

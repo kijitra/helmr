@@ -104,6 +104,7 @@ func ValidateBuildPlan(plan BuildPlan) error {
 	}
 	computers := make(map[string]bool)
 	imageSteps := 0
+	var planArchitecture RuntimeArchitecture
 	for i, input := range plan.Definitions {
 		if err := validateDefinitionInput(input); err != nil {
 			return fmt.Errorf("build plan definition %d: %w", i, err)
@@ -112,6 +113,14 @@ func ValidateBuildPlan(plan BuildPlan) error {
 			return errors.New("build plan definitions are not in canonical order")
 		}
 		if input.Template != nil {
+			a, err := ImageBuildArchitecture(input.Template.ImageBuild)
+			if err != nil {
+				return err
+			}
+			if planArchitecture != "" && planArchitecture != a {
+				return errors.New("build plan mixes image architectures")
+			}
+			planArchitecture = a
 			computers[input.DeclaredID] = true
 			imageSteps += ImageBuildStepCount(input.Template.ImageBuild)
 		}
@@ -192,7 +201,7 @@ func validateDefinitionInput(input Input) error {
 		if input.Template == nil || input.Agent != nil {
 			return errors.New("computer requires exactly one manifest")
 		}
-		if err := ValidateImageBuild(input.Template.ImageBuild, string(ArchitectureX8664)); err != nil {
+		if _, err := ImageBuildArchitecture(input.Template.ImageBuild); err != nil {
 			return err
 		}
 		if err := ValidateUnusedPolicy(input.Template.DeleteAfterUnusedMs, input.Template.DeleteAfterUnusedNever); err != nil {

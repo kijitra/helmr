@@ -15,6 +15,7 @@ import (
 func TestRuntimeELFFixturesAcceptSupportedArchitectures(t *testing.T) {
 	for _, architecture := range []definition.RuntimeArchitecture{
 		definition.ArchitectureX8664,
+		definition.ArchitectureAArch64,
 	} {
 		t.Run(string(architecture), func(t *testing.T) {
 			artifact := newValidRuntimeELFArtifact(t, architecture)
@@ -633,4 +634,25 @@ func inspectRuntimeELFArtifact(t *testing.T, memory *artifacttest.Memory) *artif
 		t.Fatalf("inspect runtime ELF test artifact: %v", err)
 	}
 	return inspected
+}
+
+func TestARMRuntimeRejectsForeignExecutableClosure(t *testing.T) {
+	for _, file := range []string{runtimeNodePath, "lib/ld-linux-aarch64.so.1", "lib/libnode.so", "lib/libc.so.6"} {
+		t.Run(file, func(t *testing.T) {
+			memory := newValidRuntimeELFArtifact(t, definition.ArchitectureAArch64)
+			raw := append([]byte(nil), memory.Files[file]...)
+			if len(raw) < 20 {
+				t.Fatalf("missing ELF fixture %s", file)
+			}
+			binary.LittleEndian.PutUint16(raw[18:20], uint16(elf.EM_X86_64))
+			replaceMemoryArtifactFile(t, memory, file, raw)
+			if verifyRuntimeExecutables(context.Background(), inspectRuntimeELFArtifact(t, memory), definition.ArchitectureAArch64) == nil {
+				t.Fatal("foreign ELF accepted")
+			}
+		})
+	}
+	memory := newValidRuntimeELFArtifact(t, definition.ArchitectureAArch64)
+	if verifyRuntimeExecutables(context.Background(), inspectRuntimeELFArtifact(t, memory), definition.ArchitectureX8664) == nil {
+		t.Fatal("ARM executable accepted under x86 metadata")
+	}
 }

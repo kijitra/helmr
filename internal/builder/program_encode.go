@@ -32,6 +32,7 @@ func encodeProgram(
 	verification VerificationResult,
 	configResultDigest string,
 	runtimeDigest string,
+	architecture definition.RuntimeArchitecture,
 	computerSeeds []bundle.ComputerSeed,
 	compiler artifact.CompilerInputs,
 	nodeVersion string,
@@ -97,6 +98,7 @@ func encodeProgram(
 		images[image.DeclaredID] = image.Artifact.Seed()
 	}
 	index, err := artifact.BuildProgramMetadata(
+		architecture,
 		plan,
 		locator,
 		images,
