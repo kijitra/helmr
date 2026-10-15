@@ -117,7 +117,7 @@ func TestComputerImageDockerfileRejectsInvalidBase(t *testing.T) {
 func TestComputerImageDockerfilePreservesARMTargetAcrossStages(t *testing.T) {
 	build := definition.ImageBuild{Root: "root", Images: []definition.ImageSpec{
 		{Key: "base", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "alpine:3.23"}}}},
-		{Key: "root", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "ubuntu:24.04"}}}},
+		{Key: "root", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "ubuntu:24.04"}}, {CopyFromImage: &definition.ImageCopyFromImage{ImageKey: "base", SrcPath: "/bin/tool", Dst: "/opt/tool"}}}},
 	}}
 	raw, _, err := ComputerImageDockerfile(build)
 	if err != nil {
