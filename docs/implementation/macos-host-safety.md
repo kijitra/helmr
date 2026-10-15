@@ -261,3 +261,22 @@ Independent Codex review found no actionable issue. Cross-model review remains
 unavailable. Temporary checksum-verified Bun 1.3.13 and Node 24.21.0 were used;
 no system toolchain or shell configuration was changed. Locked package install
 used `--ignore-scripts`.
+
+### Native storage preparation
+
+Computer allocation now shares authenticated LocalVersion materialization while
+selecting the Linux block attachment or the Darwin arm64 Unix attachment.
+Partially initialized attachments remain owned on errors. Duplicate preparation
+is rejected; lost-owner recovery recognizes `nbd-owner.json` as well as the
+existing config, claim and socket markers. All markers, including dangling
+symlinks, prevent deletion and capacity release. The allocation owner's operation
+mutex remains responsible for serializing the complete prepare/release lifecycle;
+the in-flight map is an additional guard, not a replacement.
+
+Darwin `computerhost` tests pass (26.586s); the initial sandbox run failed solely
+on Unix socket bind permission and was rerun with that capability. Tests use real
+encrypted LocalVersion storage, exercise attachment failure/duplicate/stale
+ownership, and verify retained marker/capacity behavior. The Linux amd64 suite
+cross-compiles but was not executed. Independent security review found no
+blocking issue. Worker admission, native recovery, verifier and preparation-stage
+qualification remain fail-closed. No VM was launched by these unit tests.

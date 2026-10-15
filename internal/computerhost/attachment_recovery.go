@@ -49,7 +49,7 @@ func checkComputerAttachmentResidue(root string) error {
 		if _, err := os.ReadDir(arena); err != nil {
 			return fmt.Errorf("inventory computer arena %s: %w", arena, err)
 		}
-		for _, marker := range []string{"config.json", "claim.json", "nbd.sock"} {
+		for _, marker := range []string{"config.json", "claim.json", "nbd.sock", "nbd-owner.json"} {
 			if _, err := os.Lstat(filepath.Join(arena, marker)); err == nil {
 				return fmt.Errorf("computer arena %s requires attachment reconciliation: retained %s", arena, marker)
 			} else if !errors.Is(err, os.ErrNotExist) {

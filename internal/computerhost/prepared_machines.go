@@ -54,6 +54,7 @@ type PreparedMachines struct {
 
 	mu                sync.Mutex
 	computerDevices   map[preparedMachineRef]vm.ComputerDevice
+	preparingDevices  map[preparedMachineRef]bool
 	verifiedRuntimes  map[artifact.RuntimeDescriptor]artifact.RuntimeIndex
 	programDescriptor artifact.ProgramDescriptor
 	programMetadata   *artifact.ProgramMetadata
