@@ -60,7 +60,10 @@ func createComputer(ctx context.Context, tx pgx.Tx, trust TrustIssuer, env, depl
 		return uuid.Nil(), err
 	}
 	var base definition.ComputerSeedManifest
-	if json.Unmarshal(seed, &base) != nil || base.Profile != definition.ComputerSeedProfile {
+	if json.Unmarshal(seed, &base) != nil {
+		return uuid.Nil(), ErrInvalidInput
+	}
+	if _, err := definition.ArchitectureForSeedProfile(base.Profile); err != nil {
 		return uuid.Nil(), ErrInvalidInput
 	}
 	physicalCPU, err := vm.ReservedCPUMillis(cpuMillis)

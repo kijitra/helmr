@@ -194,6 +194,12 @@ func ValidateProgramMetadata(index ProgramMetadata) error {
 		return fmt.Errorf("program metadata declarations must contain 1 to %d definitions", definition.MaxBuildDefinitions)
 	}
 	for position, declaration := range index.Definitions {
+		if declaration.Template != nil {
+			profile, err := index.Architecture.SeedProfile()
+			if err != nil || declaration.Template.Seed.Profile != profile {
+				return errors.New("program seed profile does not match runtime architecture")
+			}
+		}
 		if err := ValidateProgramDefinition(declaration); err != nil {
 			return fmt.Errorf("program metadata declaration %d: %w", position, err)
 		}
@@ -220,5 +226,5 @@ func ValidateProgramMetadata(index ProgramMetadata) error {
 }
 
 func validArchitecture(architecture definition.RuntimeArchitecture) bool {
-	return architecture == definition.ArchitectureX8664
+	return architecture.Valid()
 }

@@ -15,7 +15,7 @@ apko_arch=${APKO_ARCH:-$arch}
 apko_lock=${APKO_LOCK:-apko.$apko_arch.lock.json}
 source_date_epoch=0
 
-if [ "$arch" != "x86_64" ]; then
+if [ "$arch" != "x86_64" ] && [ "$arch" != "aarch64" ]; then
 	printf 'unsupported ARCH: %s\n' "$arch" >&2
 	exit 1
 fi
@@ -24,6 +24,10 @@ if [ "$role" != "guest" ]; then
 	exit 1
 fi
 
+case "$arch" in
+ x86_64) docker_platform=linux/amd64 ;;
+ aarch64) docker_platform=linux/arm64 ;;
+esac
 archive="$out/apko.tar"
 tmp_archive="${archive}.tmp"
 trap 'rm -f "$tmp_archive"' EXIT
@@ -43,7 +47,7 @@ mkdir -p "$out"
 mv "$tmp_archive" "$archive"
 trap - EXIT
 
-docker run --rm --platform linux/amd64 \
+docker run --rm --platform "$docker_platform" \
 	-v "$repo_root":/work \
 	-w "/work/$role_dir" \
 	-e ARCHIVE="$archive" \

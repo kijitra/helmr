@@ -16,8 +16,9 @@
 }:
 
 let
-  architecture = "x86_64";
-  loader = "ld-linux-x86-64.so.2";
+  architecture = if stdenv.hostPlatform.isAarch64 then "aarch64" else "x86_64";
+  multiarch = if stdenv.hostPlatform.isAarch64 then "aarch64-linux-gnu" else "x86_64-linux-gnu";
+  loader = if stdenv.hostPlatform.isAarch64 then "ld-linux-aarch64.so.1" else "ld-linux-x86-64.so.2";
   # Every glibc component an addon or Computer library can name must already
   # be loaded from the Runtime, so Node depends on the ones it does not link itself.
   nodeLibraries = [
@@ -28,8 +29,7 @@ let
     "libpthread.so.0"
     "libc.so.6"
   ];
-  preloadedLibraries = [
-    "libmvec.so.1"
+  preloadedLibraries = lib.optional (!stdenv.hostPlatform.isAarch64) "libmvec.so.1" ++ [
     "librt.so.1"
     "libutil.so.1"
     "libanl.so.1"
@@ -44,7 +44,7 @@ let
   ];
   runtimeLibraries = nodeLibraries ++ preloadedLibraries ++ nssLibraries;
 in
-assert lib.assertMsg stdenv.hostPlatform.isx86_64 "Runtime release supports only x86_64-linux";
+assert lib.assertMsg (stdenv.hostPlatform.isLinux && (stdenv.hostPlatform.isx86_64 || stdenv.hostPlatform.isAarch64)) "Runtime release requires x86_64-linux or aarch64-linux";
 stdenvNoCC.mkDerivation {
   pname = "helmr-runtime-release-${architecture}";
   version = nodeVersion;
@@ -83,9 +83,9 @@ stdenvNoCC.mkDerivation {
     jq -r '.[0].Layers[]' "$TMPDIR/image/manifest.json" | while read -r layer; do
       tar -xf "$TMPDIR/image/$layer" --directory "$debian" \
         --no-same-owner --no-same-permissions --exclude='dev/*' \
-        --wildcards 'usr/lib/x86_64-linux-gnu/*' 'usr/share/doc/*'
+        --wildcards 'usr/lib/${multiarch}/*' 'usr/share/doc/*'
     done
-    debian_lib="$debian/usr/lib/x86_64-linux-gnu"
+    debian_lib="$debian/usr/lib/${multiarch}"
     for name in ${loader} ${lib.concatStringsSep " " runtimeLibraries}; do
       if [ ! -e "$debian_lib/$name" ]; then
         echo "missing Debian Runtime library $name" >&2
@@ -154,7 +154,7 @@ stdenvNoCC.mkDerivation {
       "$tree/bin/node" \
       --no-strip-types \
       --enable-source-maps \
-      -e 'process.exit(process.arch === "x64" ? 0 : 1)'
+      -e 'process.exit(process.arch === "${if stdenv.hostPlatform.isAarch64 then "arm64" else "x64"}" ? 0 : 1)'
     "$tree/lib/${loader}" \
       --library-path "$tree/lib" \
       "$tree/bin/node" \
@@ -228,6 +228,6 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "Final Product-owned Helmr Runtime object";
     license = lib.licenses.asl20;
-    platforms = [ "x86_64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }

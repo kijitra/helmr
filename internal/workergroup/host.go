@@ -2,6 +2,7 @@ package workergroup
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -151,7 +152,11 @@ func ActivateHost(ctx context.Context, txb db.TxBeginner, principal HostPrincipa
 		}); err != nil {
 			return err
 		}
-		if _, err := q.UpsertVMPlatform(ctx, vmPlatformParams(template.Runtime)); err != nil {
+		params, err := vmPlatformParams(template.Runtime)
+		if err != nil {
+			return err
+		}
+		if _, err := q.UpsertVMPlatform(ctx, params); err != nil {
 			return err
 		}
 		switch pool.Status {
@@ -224,16 +229,28 @@ func activationParams(principal HostPrincipal, activation Activation) db.Activat
 	}
 }
 
-func vmPlatformParams(profile vmplatform.Profile) db.UpsertVMPlatformParams {
+func vmPlatformParams(profile vmplatform.Profile) (db.UpsertVMPlatformParams, error) {
+	if err := profile.Validate(); err != nil {
+		return db.UpsertVMPlatformParams{}, err
+	}
+	var native []byte
+	if profile.AppleVZ != nil {
+		var err error
+		native, err = json.Marshal(profile.AppleVZ)
+		if err != nil {
+			return db.UpsertVMPlatformParams{}, err
+		}
+	}
 	digest := pgtype.Text{String: profile.CPUTemplate.Digest, Valid: profile.CPUTemplate.Digest != ""}
 	return db.UpsertVMPlatformParams{
-		ID:                profile.ID,
-		DescriptorDigest:  profile.VMRuntimeDescriptorDigest,
-		FirecrackerDigest: profile.FirecrackerDigest, FirecrackerVersion: profile.FirecrackerVersion,
-		SnapshotFormatVersion: profile.SnapshotFormatVersion, HostKernelRelease: profile.HostKernelRelease,
+		ID:               profile.ID,
+		DescriptorDigest: profile.VMRuntimeDescriptorDigest,
+		Backend:          profile.EffectiveBackend(), Arch: profile.Arch, Contract: profile.Contract, AppleVz: native,
+		FirecrackerDigest: pgvalue.Text(profile.FirecrackerDigest), FirecrackerVersion: pgvalue.Text(profile.FirecrackerVersion),
+		SnapshotFormatVersion: pgvalue.Text(profile.SnapshotFormatVersion), HostKernelRelease: profile.HostKernelRelease,
 		CPUTemplateDigest: digest,
 		KernelDigest:      profile.KernelDigest, InitramfsDigest: profile.InitramfsDigest, RootfsDigest: profile.RootfsDigest,
-	}
+	}, nil
 }
 
 func sealPoolParams(groupID uuid.UUID, poolID pgtype.UUID, template Template) db.SealWorkerPoolParams {

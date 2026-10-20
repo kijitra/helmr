@@ -113,3 +113,21 @@ func TestComputerImageDockerfileRejectsInvalidBase(t *testing.T) {
 		t.Fatal("ComputerImageDockerfile accepted an invalid base")
 	}
 }
+
+func TestComputerImageDockerfilePreservesARMTargetAcrossStages(t *testing.T) {
+	build := definition.ImageBuild{Root: "root", Images: []definition.ImageSpec{
+		{Key: "base", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "alpine:3.23"}}}},
+		{Key: "root", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "ubuntu:24.04"}}, {CopyFromImage: &definition.ImageCopyFromImage{ImageKey: "base", SrcPath: "/bin/tool", Dst: "/opt/tool"}}}},
+	}}
+	raw, _, err := ComputerImageDockerfile(build)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(raw), "FROM --platform=linux/arm64 ") != 2 || strings.Contains(string(raw), "linux/amd64") {
+		t.Fatalf("wrong architecture in Dockerfile: %s", raw)
+	}
+	build.Images[0].Platform.Architecture = "x86_64"
+	if _, _, err := ComputerImageDockerfile(build); err == nil {
+		t.Fatal("mixed image stages accepted")
+	}
+}

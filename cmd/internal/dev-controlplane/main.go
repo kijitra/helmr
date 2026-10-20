@@ -176,8 +176,13 @@ func runDev(ctx context.Context, log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("configure allocation owner: %w", err)
 	}
+	localModel, err := loadLocalModel()
+	if err != nil {
+		return err
+	}
 	mailer, magicLinkDelivery := devEmail(log)
 	app, err := controlplane.NewServer(controlplane.ServerConfig{
+		LocalModel:                     localModel,
 		Allocator:                      allocator,
 		DiagnosticDB:                   diagnosticPool,
 		DiagnosticBounds:               diagnosticAdmission.Bounds,

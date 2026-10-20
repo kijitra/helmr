@@ -17,6 +17,11 @@ import (
 
 type Invoke func(context.Context, string, json.RawMessage) (json.RawMessage, error)
 
+type localModelInput struct {
+	TurnID string `json:"turnId"`
+	Prompt string `json:"prompt"`
+}
+
 type listInput struct {
 	Cursor string `json:"cursor,omitempty"`
 }
@@ -84,6 +89,7 @@ type waitInput struct {
 func NewHandler(invoke Invoke) http.Handler {
 	server := mcp.NewServer(&mcp.Implementation{Name: "helmr-runtime", Version: "1"}, &mcp.ServerOptions{Instructions: skillInstructions()})
 	addSkills(server)
+	add[localModelInput](server, invoke, "infer_local_model", "Use the operator-configured local model for this exact running Turn. Available only in an explicitly enabled development Environment.")
 	add[agentsInput](server, invoke, "list_agents", "List Agent targets for spawn or start. Only root Sessions can create work.")
 	add[listInput](server, invoke, "list_computers", "List Computers visible to this Session.")
 	add[createInput](server, invoke, "spawn", "Create owned child work and return its Session and Turn admission receipt.")

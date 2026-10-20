@@ -385,7 +385,7 @@ func validImageString(value string, maxBytes int) bool {
 }
 
 func validImageArchitecture(value string) bool {
-	return value == "x86_64"
+	return RuntimeArchitecture(value).Valid()
 }
 
 // ValidateImageRunArgv applies the exec-form RUN limits shared by every Helmr

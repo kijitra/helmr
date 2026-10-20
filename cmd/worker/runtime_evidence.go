@@ -62,6 +62,7 @@ func workerRuntimeProfile(
 	environment := workerapi.CPUEnvironment{
 		FirecrackerVersion: evidence.Environment.FirecrackerVersion,
 		HostKernelRelease:  evidence.Environment.KernelVersion,
+		ARM:                evidence.Environment.ARM.Clone(),
 		MicrocodeVersion:   evidence.Environment.MicrocodeVersion,
 		BIOSVersion:        evidence.Environment.BIOSVersion,
 		BIOSRevision:       evidence.Environment.BIOSRevision,
@@ -70,7 +71,7 @@ func workerRuntimeProfile(
 	if err != nil {
 		return vmplatform.Profile{}, nil, workerapi.CPUEnvironment{}, err
 	}
-	if environment.FirecrackerVersion != profile.FirecrackerVersion || environment.HostKernelRelease != profile.HostKernelRelease {
+	if !environment.MatchesRuntime(profile) {
 		return vmplatform.Profile{}, nil, workerapi.CPUEnvironment{}, errors.New("CPU environment does not match the measured runtime profile")
 	}
 	return profile, shapes, environment, nil

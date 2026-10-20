@@ -80,13 +80,22 @@ type Capabilities struct {
 	ExecutionSlotsAvailable   int32                 `json:"execution_slots_available"`
 }
 
+type AppleVZCPUEnvironment struct {
+	HelperDigest  string `json:"helper_digest"`
+	OSBuild       string `json:"os_build"`
+	HardwareModel string `json:"hardware_model"`
+}
+
 type CPUEnvironment struct {
-	Digest             string `json:"digest"`
-	FirecrackerVersion string `json:"firecracker_version"`
-	HostKernelRelease  string `json:"host_kernel_release"`
-	MicrocodeVersion   string `json:"microcode_version"`
-	BIOSVersion        string `json:"bios_version"`
-	BIOSRevision       string `json:"bios_revision"`
+	ARM                *vmplatform.ARMCPUEnvironment `json:"arm,omitempty"`
+	Backend            string                        `json:"backend,omitempty"`
+	AppleVZ            *AppleVZCPUEnvironment        `json:"apple_vz,omitempty"`
+	Digest             string                        `json:"digest"`
+	FirecrackerVersion string                        `json:"firecracker_version"`
+	HostKernelRelease  string                        `json:"host_kernel_release"`
+	MicrocodeVersion   string                        `json:"microcode_version"`
+	BIOSVersion        string                        `json:"bios_version"`
+	BIOSRevision       string                        `json:"bios_revision"`
 }
 
 type StatusResponse struct {

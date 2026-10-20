@@ -1,0 +1,20 @@
+{
+  "backend": "apple-vz",
+  "arch": "aarch64",
+  "contract": "helmr.vm-runtime.v1",
+  "vm_runtime_descriptor_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "host_kernel_release": "25.6.0",
+  "kernel_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "initramfs_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "rootfs_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "apple_vz": {
+    "helper_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "os_build": "25G42",
+    "hardware_model": "Mac13,2",
+    "installation_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "key_domain_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "boot_session_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "state_format": "helmr.apple-vz-state.v1"
+  },
+  "id": "sha256:49a57a6c1e48423102c0555224ac20f1e2682f1ea23d7e04dfff9681e4d77b50"
+}

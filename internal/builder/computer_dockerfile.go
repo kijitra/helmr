@@ -45,7 +45,12 @@ func ComputerImageDockerfile(
 	build definition.ImageBuild,
 ) ([]byte, string, error) {
 	lines := []string{"# syntax=" + dockerfileFrontend, "FROM helmr_installed AS installed-tree"}
-	if err := definition.ValidateImageBuild(build, "x86_64"); err != nil {
+	architecture, err := definition.ImageBuildArchitecture(build)
+	if err != nil {
+		return nil, "", err
+	}
+	ociArchitecture, err := architecture.OCIArchitecture()
+	if err != nil {
 		return nil, "", err
 	}
 	byKey := make(map[string]definition.ImageSpec, len(build.Images))
@@ -84,7 +89,7 @@ func ComputerImageDockerfile(
 				if err != nil {
 					return err
 				}
-				lines = append(lines, "FROM --platform=linux/amd64 "+base+" AS "+alias)
+				lines = append(lines, "FROM --platform=linux/"+ociArchitecture+" "+base+" AS "+alias)
 			case step.Run != nil:
 				command, err := dockerRunJSON(step.Run.Argv)
 				if err != nil {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/helmrdotdev/helmr/internal/sha256sum"
+	"github.com/helmrdotdev/helmr/internal/vmplatform"
 )
 
 const cpuEnvironmentDomain = "helmr.cpu-environment.v0"
@@ -14,6 +15,31 @@ const cpuEnvironmentDomain = "helmr.cpu-environment.v0"
 func (e CPUEnvironment) ExpectedDigest() (string, error) {
 	if err := e.validateFields(); err != nil {
 		return "", err
+	}
+	if e.ARM != nil {
+		payload, err := json.Marshal(struct {
+			Domain             string                       `json:"domain"`
+			Backend            string                       `json:"backend"`
+			FirecrackerVersion string                       `json:"firecracker_version"`
+			HostKernelRelease  string                       `json:"host_kernel_release"`
+			ARM                vmplatform.ARMCPUEnvironment `json:"arm"`
+		}{"helmr.cpu-environment.arm.v1", vmplatform.BackendFirecracker, e.FirecrackerVersion, e.HostKernelRelease, *e.ARM})
+		if err != nil {
+			return "", err
+		}
+		return sha256sum.DigestBytes(payload), nil
+	}
+	if e.EffectiveBackend() == vmplatform.BackendAppleVZ {
+		payload, err := json.Marshal(struct {
+			Domain            string                `json:"domain"`
+			Backend           string                `json:"backend"`
+			HostKernelRelease string                `json:"host_kernel_release"`
+			AppleVZ           AppleVZCPUEnvironment `json:"apple_vz"`
+		}{"helmr.cpu-environment.v1", vmplatform.BackendAppleVZ, e.HostKernelRelease, *e.AppleVZ})
+		if err != nil {
+			return "", err
+		}
+		return sha256sum.DigestBytes(payload), nil
 	}
 	payload, err := json.Marshal(struct {
 		Domain             string `json:"domain"`
@@ -45,7 +71,56 @@ func (e CPUEnvironment) Validate() error {
 	return nil
 }
 
+func (e CPUEnvironment) EffectiveBackend() string {
+	if e.Backend == "" {
+		return vmplatform.BackendFirecracker
+	}
+	return e.Backend
+}
+
+// MatchesRuntime binds native host evidence explicitly; empty Firecracker
+// fields cannot establish that an Apple VZ environment matches a profile.
+func (e CPUEnvironment) MatchesRuntime(p vmplatform.Profile) bool {
+	if e.Validate() != nil || p.Validate() != nil || e.EffectiveBackend() != p.EffectiveBackend() || e.HostKernelRelease != p.HostKernelRelease {
+		return false
+	}
+	if e.EffectiveBackend() == vmplatform.BackendAppleVZ {
+		return e.AppleVZ.HelperDigest == p.AppleVZ.HelperDigest && e.AppleVZ.OSBuild == p.AppleVZ.OSBuild && e.AppleVZ.HardwareModel == p.AppleVZ.HardwareModel
+	}
+	return e.FirecrackerVersion == p.FirecrackerVersion && (e.ARM != nil) == (p.Arch == "aarch64")
+}
+
 func (e CPUEnvironment) validateFields() error {
+	if e.ARM != nil {
+		if e.EffectiveBackend() != vmplatform.BackendFirecracker || e.AppleVZ != nil || e.MicrocodeVersion != "" || e.BIOSVersion != "" || e.BIOSRevision != "" {
+			return errors.New("mixed ARM CPU environment")
+		}
+		for _, value := range []string{e.FirecrackerVersion, e.HostKernelRelease} {
+			if value == "" || strings.TrimSpace(value) != value || len(value) > 255 || strings.ContainsAny(value, "\r\n\x00") {
+				return errors.New("invalid ARM CPU environment string")
+			}
+		}
+		return e.ARM.Validate()
+	}
+	if e.EffectiveBackend() == vmplatform.BackendAppleVZ {
+		if e.AppleVZ == nil || e.FirecrackerVersion != "" || e.MicrocodeVersion != "" || e.BIOSVersion != "" || e.BIOSRevision != "" || !sha256sum.ValidDigest(e.AppleVZ.HelperDigest) {
+			return errors.New("invalid or mixed apple-vz CPU environment")
+		}
+		for _, value := range []string{e.HostKernelRelease, e.AppleVZ.OSBuild, e.AppleVZ.HardwareModel} {
+			if value == "" || strings.TrimSpace(value) != value || len(value) > 255 {
+				return errors.New("invalid native CPU environment string")
+			}
+			for _, r := range value {
+				if r < 32 || r == 127 {
+					return errors.New("invalid native CPU environment control character")
+				}
+			}
+		}
+		return nil
+	}
+	if e.EffectiveBackend() != vmplatform.BackendFirecracker || e.AppleVZ != nil {
+		return errors.New("unsupported or mixed CPU environment backend")
+	}
 	for _, value := range []string{
 		e.FirecrackerVersion,
 		e.HostKernelRelease,

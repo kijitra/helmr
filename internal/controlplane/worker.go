@@ -302,8 +302,13 @@ func workerAdmissionReadiness(state db.GetWorkerHostStatusRow) workerapi.Readine
 }
 
 func workerTemplate(capabilities workerapi.Capabilities) workergroup.Template {
+	runtimeProfile := capabilities.Runtime
+	if runtimeProfile.AppleVZ != nil {
+		native := *runtimeProfile.AppleVZ
+		runtimeProfile.AppleVZ = &native
+	}
 	return workergroup.Template{
-		Schema: workergroup.TemplateSchema, Runtime: capabilities.Runtime,
+		Schema: workergroup.TemplateSchema, Runtime: runtimeProfile,
 		CPUShapes: append([]vmplatform.CPUShape(nil), capabilities.CPUShapes...),
 		Capacity: workergroup.ResourceVector{
 			CPUMillis: capabilities.MaxVCPUs * 1000, MemoryBytes: capabilities.MaxMemoryMiB * 1024 * 1024,
@@ -336,6 +341,7 @@ func normalizeWorkerCapabilities(input workerapi.Capabilities) (workerapi.Capabi
 		cpuShapes[index].CPUConfigDigest = strings.TrimSpace(cpuShapes[index].CPUConfigDigest)
 	}
 	cpuEnvironment := input.CPUEnvironment
+	cpuEnvironment.ARM = input.CPUEnvironment.ARM.Clone()
 	cpuEnvironment.Digest = strings.TrimSpace(cpuEnvironment.Digest)
 	cpuEnvironment.FirecrackerVersion = strings.TrimSpace(cpuEnvironment.FirecrackerVersion)
 	cpuEnvironment.HostKernelRelease = strings.TrimSpace(cpuEnvironment.HostKernelRelease)
@@ -360,8 +366,7 @@ func normalizeWorkerCapabilities(input workerapi.Capabilities) (workerapi.Capabi
 	if err := capabilities.CPUEnvironment.Validate(); err != nil {
 		return workerapi.Capabilities{}, fmt.Errorf("worker CPU environment: %w", err)
 	}
-	if capabilities.CPUEnvironment.FirecrackerVersion != capabilities.Runtime.FirecrackerVersion ||
-		capabilities.CPUEnvironment.HostKernelRelease != capabilities.Runtime.HostKernelRelease {
+	if !capabilities.CPUEnvironment.MatchesRuntime(capabilities.Runtime) {
 		return workerapi.Capabilities{}, errors.New("worker CPU environment does not match the runtime profile")
 	}
 	if capabilities.MaxVCPUs <= 0 {

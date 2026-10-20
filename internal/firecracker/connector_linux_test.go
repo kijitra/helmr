@@ -41,8 +41,8 @@ func TestRuntimeCapabilitiesRemainArtifactContentOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if capabilities.Arch != "x86_64" {
-		t.Fatalf("runtime capabilities arch = %q, want x86_64", capabilities.Arch)
+	if capabilities.Arch != testCheckpointArchitecture(t) {
+		t.Fatalf("runtime capabilities arch = %q, want %s", capabilities.Arch, testCheckpointArchitecture(t))
 	}
 	if capabilities.Contract != vmplatform.Contract || !sha256sum.ValidDigest(capabilities.KernelDigest) || !sha256sum.ValidDigest(capabilities.InitramfsDigest) || !sha256sum.ValidDigest(capabilities.RootfsDigest) {
 		t.Fatalf("runtime artifact capabilities = %+v", capabilities)

@@ -78,7 +78,7 @@ func (c *Connector) Qualify(ctx context.Context) (*QualifiedRuntime, error) {
 		return nil, fmt.Errorf("inspect Firecracker runtime capabilities: %w", err)
 	}
 	return &QualifiedRuntime{
-		connector: c, evidence: evidence, capabilities: capabilities,
+		connector: c, evidence: evidence.clone(), capabilities: capabilities,
 	}, nil
 }
 
@@ -101,7 +101,7 @@ func (runtime *QualifiedRuntime) RuntimeCapabilities() RuntimeCapabilities {
 }
 
 func (runtime *QualifiedRuntime) HostRuntimeEvidence() HostRuntimeEvidence {
-	return runtime.evidence
+	return runtime.evidence.clone()
 }
 
 func (c *Connector) runtimeCapabilities() (RuntimeCapabilities, error) {

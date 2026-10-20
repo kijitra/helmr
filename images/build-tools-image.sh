@@ -9,7 +9,7 @@ script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 tools_root="$repo_root/images/tools"
 
-if [ "$arch" != "x86_64" ]; then
+if [ "$arch" != "x86_64" ] && [ "$arch" != "aarch64" ]; then
 	printf 'unsupported ARCH: %s\n' "$arch" >&2
 	exit 1
 fi
@@ -36,8 +36,8 @@ if [ "$rebuild" = "1" ] || [ ! -f "$archive" ]; then
 			apko.yaml \
 			helmr-boot-tools:local \
 			"$tmp_archive_rel" \
-			--arch x86_64 \
-			--lockfile apko.x86_64.lock.json \
+			--arch "$arch" \
+			--lockfile "apko.$arch.lock.json" \
 			--build-date 1970-01-01T00:00:00Z \
 			--sbom=false \
 			--vcs=false
@@ -78,7 +78,11 @@ if [ "${#image_id}" -ne 71 ]; then
 	printf 'invalid boot tools image ID length: %s\n' "$image_id" >&2
 	exit 1
 fi
-docker run --rm --platform linux/amd64 --entrypoint /bin/sh "$image_id" -ceu '
+case "$arch" in
+ x86_64) docker_platform=linux/amd64 ;;
+ aarch64) docker_platform=linux/arm64 ;;
+esac
+docker run --rm --platform "$docker_platform" --entrypoint /bin/sh "$image_id" -ceu '
 	for command in cpio depmod gzip jq sort tar unsquashfs; do
 		command -v "$command" >/dev/null
 	done

@@ -139,7 +139,7 @@ export function analyze(options: AnalyzeOptions): AnalysisResult {
   return { buildPlan, buildPlanBytes: canonicalizeJsonValue(buildPlan as unknown as JsonValue), definitionIndex, definitionIndexBytes: canonicalizeJsonValue(definitionIndex as unknown as JsonValue) }
 }
 function locateDefinitions(options: AnalyzeOptions): LocatedDefinition[] {
-  if (options.architecture !== "x86_64") throw new Error("Unsupported architecture")
+  if (options.architecture !== "x86_64" && options.architecture !== "aarch64") throw new Error("Unsupported architecture")
   const found = new Map<string, LocatedDefinition>()
   const add = (definition: Definition, item: AnalysisExport, throughAgent: boolean) => {
     validateID(definition.id); validateModulePath(item.modulePath); validateExportName(item.exportName)

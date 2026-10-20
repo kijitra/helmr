@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-20",
+  "host": {
+    "chip": "M3 Max",
+    "memory_gib": 128,
+    "macos": "27.0.1"
+  },
+  "route": [
+    "Apple Virtualization.framework",
+    "Lima 2.2.1",
+    "ARM64 Ubuntu 26.04",
+    "Linux KVM",
+    "Firecracker 1.17.0"
+  ],
+  "scope": "Dedicated local Mac Test Environment; no cloud production deployment",
+  "source": {
+    "files_compared": 1717,
+    "manifest_sha256": "75daaf07f5e088d6a40e16cae7793af526df9bc1640b0975c7af71d29fc0dde0",
+    "matches_local_working_tree": true,
+    "agent_sha256": "568fb625aff7ccc23f84b3fb7b2c081dbc92caaf1886a3d43806a8e447029aeb",
+    "sdk": "source copied from checkout into private build workspace"
+  },
+  "first_turn": {
+    "status": "completed",
+    "model": "qwen3.8:27b",
+    "architecture": "arm64",
+    "turn_count": 1,
+    "init_count": 2,
+    "response": "こんにちは。私はMac上でローカルに動作するAIアシスタントです。プライバシーを重視した環境で、あなたの質問やタスクを迅速にお手伝いします。何かお手伝いできることはありますか？",
+    "started_at": "2026-10-20T02:27:46.567326Z",
+    "completed_at": "2026-10-20T02:27:50.943387Z",
+    "durable_completion_save": true
+  },
+  "ask_after_ram_restore": {
+    "status": "completed",
+    "question_was_pending": true,
+    "answer": "動作確認OK",
+    "response": "承知しました。ありがとうございます。",
+    "turn_count": 2,
+    "retained_fields": [
+      "nonce",
+      "pid",
+      "initCount",
+      "computer",
+      "session"
+    ],
+    "all_retained_fields_match": true,
+    "source_vm_terminated_before_restore": true,
+    "durable_completion_save": true
+  },
+  "service_restart_and_ram_restore": {
+    "status": "completed",
+    "turn_count": 3,
+    "response": "前の処理から再開しました。",
+    "all_retained_fields_match": true,
+    "durable_completion_save": true,
+    "worker_build": "Nix worker-host"
+  },
+  "validation": {
+    "race_tests_passed": [
+      "internal/session",
+      "internal/computer",
+      "internal/computerhost",
+      "internal/controlplane",
+      "cmd/helmr",
+      "internal/localmodel",
+      "internal/runtimemcp",
+      "cmd/internal/dev-controlplane"
+    ],
+    "nix_worker_host_build": "passed"
+  },
+  "latest_checkpoint_status": "ready",
+  "review": "Independent Codex source review clear; separate provider/model review unavailable",
+  "limits": [
+    "Not a fresh-checkout installer acceptance",
+    "No long-duration or reboot acceptance",
+    "No claim for untested Mac models",
+    "HTTP cancellation does not prove immediate Ollama GPU cessation"
+  ]
+}

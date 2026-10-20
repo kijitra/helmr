@@ -170,3 +170,49 @@ func TestDockerMissingIsActionable(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDockerBuildPlatformIsExplicitAndValidated(t *testing.T) {
+	for _, platform := range []string{"linux/amd64", "linux/arm64"} {
+		t.Run(platform, func(t *testing.T) {
+			root := fakeDocker(t, "running")
+			runner, err := prepareDockerBuildRunner(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := executeDockerBuildx(t.Context(), &cobra.Command{}, dockerBuildxRequest{Runner: runner, Platform: platform, Target: "installed-tree", OutputType: "oci"}); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(dockerCalls(t, root), "--platform "+platform) {
+				t.Fatal("requested build architecture was lost")
+			}
+		})
+	}
+	if err := executeDockerBuildx(t.Context(), &cobra.Command{}, dockerBuildxRequest{Platform: "linux/riscv64"}); err == nil {
+		t.Fatal("unknown build platform accepted")
+	}
+}
+
+func TestDockerBuildUsesReleasePlatformWhenRequestOmitsIt(t *testing.T) {
+	original := deploymentBundleBuilderPlatform
+	t.Cleanup(func() { deploymentBundleBuilderPlatform = original })
+	for _, platform := range []string{"linux/amd64", "linux/arm64"} {
+		t.Run(platform, func(t *testing.T) {
+			root := fakeDocker(t, "running")
+			deploymentBundleBuilderPlatform = platform
+			runner, err := prepareDockerBuildRunner(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := executeDockerBuildx(t.Context(), &cobra.Command{}, dockerBuildxRequest{Runner: runner, Target: "preparation", OutputType: "local"}); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(dockerCalls(t, root), "--platform "+platform) {
+				t.Fatal("release platform was lost")
+			}
+		})
+	}
+	deploymentBundleBuilderPlatform = "linux/riscv64"
+	if err := executeDockerBuildx(t.Context(), &cobra.Command{}, dockerBuildxRequest{}); err == nil {
+		t.Fatal("unsupported release platform accepted")
+	}
+}

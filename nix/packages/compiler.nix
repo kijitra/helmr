@@ -9,13 +9,14 @@
   platformEntries,
 }:
 let
+  esbuildPlatform = if stdenvNoCC.hostPlatform.isAarch64 then "linux-arm64" else "linux-x64";
   api = fetchurl {
     url = "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz";
     hash = "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==";
   };
   binary = fetchurl {
-    url = "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.28.2.tgz";
-    hash = "sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==";
+    url = "https://registry.npmjs.org/@esbuild/${esbuildPlatform}/-/${esbuildPlatform}-0.28.2.tgz";
+    hash = if stdenvNoCC.hostPlatform.isAarch64 then "sha512-pW4AC0P3it8c7do9MVM4p51FzHzdM/TZrerurgRcHJ2WTa1VQ1CIq18xncfpBJw4ojkiZZrKW2yIBWBP92j6Ug==" else "sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==";
   };
 in
 stdenvNoCC.mkDerivation {
@@ -32,10 +33,10 @@ stdenvNoCC.mkDerivation {
   buildCommand = ''
     set -euo pipefail
     tree="$TMPDIR/tree"
-    install -d "$tree/helmr/node_modules/esbuild" "$tree/helmr/node_modules/@esbuild/linux-x64"
+    install -d "$tree/helmr/node_modules/esbuild" "$tree/helmr/node_modules/@esbuild/${esbuildPlatform}"
     tar -xzf ${api} --strip-components=1 -C "$tree/helmr/node_modules/esbuild"
-    tar -xzf ${binary} --strip-components=1 -C "$tree/helmr/node_modules/@esbuild/linux-x64"
-    if readelf -l "$tree/helmr/node_modules/@esbuild/linux-x64/bin/esbuild" | grep -q INTERP; then
+    tar -xzf ${binary} --strip-components=1 -C "$tree/helmr/node_modules/@esbuild/${esbuildPlatform}"
+    if readelf -l "$tree/helmr/node_modules/@esbuild/${esbuildPlatform}/bin/esbuild" | grep -q INTERP; then
       echo "esbuild must be a self-contained executable" >&2; exit 1
     fi
     install -m0644 ${platformEntries}/internal/compiler/program-compiler.mjs "$tree/helmr/program-compiler.mjs"
@@ -51,6 +52,6 @@ stdenvNoCC.mkDerivation {
   '';
   meta = {
     description = "Helmr Program bundling and declaration analysis";
-    platforms = [ "x86_64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }

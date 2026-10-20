@@ -1,0 +1,20 @@
+# Experimental outer Linux VM for the nested Firecracker path.
+# This does not install or configure the Helmr services inside the VM.
+minimumLimaVersion: 2.2.1
+vmType: vz
+arch: aarch64
+nestedVirtualization: true
+images:
+  - location: https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-arm64.img
+    arch: aarch64
+    digest: sha256:63a93bd5a8d76e33b15ceb5daa3657bd79be804748051ab178e643b0f5da22e7
+cpus: 4
+memory: 12GiB
+disk: 160GiB
+mounts: null
+plain: true
+containerd:
+  user: false
+  system: false
+param:
+  internal_netplanOptional: "true"

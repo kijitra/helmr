@@ -161,24 +161,28 @@ SELECT *
  FOR UPDATE;
 -- name: UpsertVMPlatform :one
 INSERT INTO vm_platforms (
-    id, descriptor_digest,
+    id, descriptor_digest, backend, arch, contract, apple_vz,
     firecracker_digest, firecracker_version, snapshot_format_version,
     host_kernel_release, cpu_template_digest,
     kernel_digest, initramfs_digest, rootfs_digest, last_seen_at
 )
 VALUES (
     sqlc.arg(id),
-    sqlc.arg(descriptor_digest), sqlc.arg(firecracker_digest),
-    sqlc.arg(firecracker_version), sqlc.arg(snapshot_format_version),
+    sqlc.arg(descriptor_digest), sqlc.arg(backend), sqlc.arg(arch), sqlc.arg(contract), sqlc.narg(apple_vz), sqlc.narg(firecracker_digest),
+    sqlc.narg(firecracker_version), sqlc.narg(snapshot_format_version),
     sqlc.arg(host_kernel_release),
     sqlc.narg(cpu_template_digest), sqlc.arg(kernel_digest),
     sqlc.arg(initramfs_digest), sqlc.arg(rootfs_digest), now()
 )
 ON CONFLICT (id) DO UPDATE SET last_seen_at = now()
- WHERE vm_platforms.descriptor_digest = EXCLUDED.descriptor_digest
-   AND vm_platforms.firecracker_digest = EXCLUDED.firecracker_digest
-   AND vm_platforms.firecracker_version = EXCLUDED.firecracker_version
-   AND vm_platforms.snapshot_format_version = EXCLUDED.snapshot_format_version
+ WHERE vm_platforms.backend = EXCLUDED.backend
+   AND vm_platforms.arch = EXCLUDED.arch
+   AND vm_platforms.contract = EXCLUDED.contract
+   AND vm_platforms.apple_vz IS NOT DISTINCT FROM EXCLUDED.apple_vz
+   AND vm_platforms.descriptor_digest = EXCLUDED.descriptor_digest
+   AND vm_platforms.firecracker_digest IS NOT DISTINCT FROM EXCLUDED.firecracker_digest
+   AND vm_platforms.firecracker_version IS NOT DISTINCT FROM EXCLUDED.firecracker_version
+   AND vm_platforms.snapshot_format_version IS NOT DISTINCT FROM EXCLUDED.snapshot_format_version
    AND vm_platforms.host_kernel_release = EXCLUDED.host_kernel_release
    AND vm_platforms.cpu_template_digest IS NOT DISTINCT FROM EXCLUDED.cpu_template_digest
    AND vm_platforms.kernel_digest = EXCLUDED.kernel_digest

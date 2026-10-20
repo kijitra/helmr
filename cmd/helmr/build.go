@@ -22,11 +22,16 @@ import (
 // deploymentBundleBuilderImage is injected by Product release automation only
 // after the canonical image has been published by digest.
 var deploymentBundleBuilderImage string
+
+// Paired with the digest-pinned builder by the release, never inferred from
+// the CLI host (a Mac CLI may target an x86 Linux deployment).
+var deploymentBundleBuilderPlatform = "linux/amd64"
 var buildContextTempDir string
 
 var runDockerBuildx = executeDockerBuildx
 
 type dockerBuildxRequest struct {
+	Platform         string
 	Runner           dockerBuildRunner
 	Dockerfile       string
 	ContextDirectory string
@@ -73,6 +78,10 @@ func buildDeploymentBundleAt(
 	builderContext, err := builder.BuilderContext(deploymentBundleBuilderImage)
 	if err != nil {
 		return errors.New("this Helmr release does not contain a canonical bundle builder image")
+	}
+	architecture, err := bundleBuilderArchitecture(deploymentBundleBuilderPlatform)
+	if err != nil {
+		return err
 	}
 	root, err := filepath.Abs(source)
 	if err != nil {
@@ -171,7 +180,7 @@ func buildDeploymentBundleAt(
 		}); err != nil {
 			return fmt.Errorf("prepare build environment: %w", err)
 		}
-		environmentContext, err = builder.LayoutContext(environmentLayout)
+		environmentContext, err = builder.LayoutContextForArchitecture(environmentLayout, architecture)
 		if err != nil {
 			return fmt.Errorf("validate build environment: %w", err)
 		}
@@ -195,7 +204,7 @@ func buildDeploymentBundleAt(
 	}); err != nil {
 		return fmt.Errorf("install project dependencies: %w", err)
 	}
-	installedContext, err := builder.LayoutContext(installedLayout)
+	installedContext, err := builder.LayoutContextForArchitecture(installedLayout, architecture)
 	if err != nil {
 		return fmt.Errorf("validate installed project tree: %w", err)
 	}
@@ -326,6 +335,14 @@ func buildComputerImages(
 		target     string
 	}]string, len(computerBuilds))
 	for index, computer := range computerBuilds {
+		architecture, err := definition.ImageBuildArchitecture(computer.Build)
+		if err != nil {
+			return nil, err
+		}
+		ociArchitecture, err := architecture.OCIArchitecture()
+		if err != nil {
+			return nil, err
+		}
 		dockerfile, target, err := builder.ComputerImageDockerfile(computer.Build)
 		if err != nil {
 			return nil, fmt.Errorf("computer image %q: %w", computer.DeclaredID, err)
@@ -344,6 +361,7 @@ func buildComputerImages(
 			output := filepath.Join(computerContext, filename)
 			if err := runDockerBuildx(ctx, command, dockerBuildxRequest{
 				Runner:     runner,
+				Platform:   "linux/" + ociArchitecture,
 				Dockerfile: dockerfilePath, ContextDirectory: emptyContext,
 				Target: target, Output: output, OutputType: "oci",
 				OutputAttributes: map[string]string{"rewrite-timestamp": "true"},
@@ -366,6 +384,13 @@ func executeDockerBuildx(
 	command *cobra.Command,
 	request dockerBuildxRequest,
 ) error {
+	platform := request.Platform
+	if platform == "" {
+		platform = deploymentBundleBuilderPlatform
+	}
+	if platform != "linux/amd64" && platform != "linux/arm64" {
+		return fmt.Errorf("unsupported bundle builder platform %q", platform)
+	}
 	var output strings.Builder
 	output.WriteString("type=" + request.OutputType + ",dest=" + request.Output)
 	attributeNames := make([]string, 0, len(request.OutputAttributes))
@@ -380,7 +405,7 @@ func executeDockerBuildx(
 		"buildx",
 		"build",
 		"--builder", request.Runner.name,
-		"--platform", "linux/amd64",
+		"--platform", platform,
 		"--file", request.Dockerfile,
 		"--target", request.Target,
 		"--output", output.String(),
@@ -415,4 +440,15 @@ func executeDockerBuildx(
 		return fmt.Errorf("build deployment bundle with Docker Buildx: %w", errors.Join(err, ctx.Err()))
 	}
 	return nil
+}
+
+func bundleBuilderArchitecture(platform string) (definition.RuntimeArchitecture, error) {
+	switch platform {
+	case "linux/amd64":
+		return definition.ArchitectureX8664, nil
+	case "linux/arm64":
+		return definition.ArchitectureAArch64, nil
+	default:
+		return "", fmt.Errorf("unsupported bundle builder platform %q", platform)
+	}
 }

@@ -34,7 +34,7 @@ func TestNegotiationRejectsBeforeDeviceAccess(t *testing.T) {
 	}
 }
 func TestNegotiationUnsupportedAndAbort(t *testing.T) {
-	wire := append([]byte{0, 0, 0, 3}, negotiationOption(7, 0, nil)...)
+	wire := append([]byte{0, 0, 0, 3}, negotiationOption(8, 0, nil)...)
 	wire = append(wire, negotiationOption(2, 0, nil)...)
 	stream := &negotiationStream{Reader: bytes.NewReader(wire)}
 	if err := negotiate(t.Context(), stream, nil, 4096); err != nil {
@@ -46,7 +46,7 @@ func TestNegotiationUnsupportedAndAbort(t *testing.T) {
 	}
 	wire = []byte{0, 0, 0, 3}
 	for range 16 {
-		wire = append(wire, negotiationOption(7, 0, nil)...)
+		wire = append(wire, negotiationOption(8, 0, nil)...)
 	}
 	stream = &negotiationStream{Reader: bytes.NewReader(wire)}
 	if err := negotiate(t.Context(), stream, nil, 4096); err == nil {

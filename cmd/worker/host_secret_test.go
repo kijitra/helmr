@@ -54,6 +54,10 @@ func TestReadWorkerEnrollmentTokenRejectsUnsafeFiles(t *testing.T) {
 	if err := os.WriteFile(wrongMode, []byte(token.Raw), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// Set the deliberately unsafe mode explicitly; creation is masked by umask.
+	if err := os.Chmod(wrongMode, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	newline := filepath.Join(dir, "newline")
 	if err := os.WriteFile(newline, []byte(token.Raw+"\n"), 0o600); err != nil {
 		t.Fatal(err)

@@ -292,3 +292,30 @@ func writeTestLayout(t *testing.T, directory string) {
 		}
 	}
 }
+
+func TestBuildComputerImagesUsesAnalyzedARMArchitecture(t *testing.T) {
+	original := runDockerBuildx
+	t.Cleanup(func() { runDockerBuildx = original })
+	calls := 0
+	runDockerBuildx = func(_ context.Context, _ *cobra.Command, request dockerBuildxRequest) error {
+		calls++
+		if request.Platform != "linux/arm64" {
+			t.Fatalf("ARM computer build platform = %q", request.Platform)
+		}
+		raw, err := os.ReadFile(request.Dockerfile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(raw), "--platform=linux/arm64 ") {
+			t.Fatal("ARM Dockerfile lost platform")
+		}
+		return nil
+	}
+	build := builder.ComputerBuild{DeclaredID: "arm", Build: definition.ImageBuild{Root: "base", Images: []definition.ImageSpec{{Key: "base", Platform: definition.ImagePlatform{OS: "linux", Architecture: "aarch64"}, Steps: []definition.ImageStep{{From: &definition.ImageFrom{Ref: "debian:trixie-slim"}}}}}}}
+	if _, err := buildComputerImages(t.Context(), &cobra.Command{}, t.TempDir(), t.TempDir(), t.TempDir(), nil, []builder.ComputerBuild{build}, dockerBuildRunner{}); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("ARM build calls = %d", calls)
+	}
+}

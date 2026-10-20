@@ -139,6 +139,7 @@ func testProgramMetadata(t *testing.T) ProgramMetadata {
 	t.Helper()
 	plan := testBuildPlan()
 	index, err := BuildProgramMetadata(
+		definition.ArchitectureX8664,
 		plan,
 		testDefinitionIndex(),
 		map[string]definition.ComputerSeed{

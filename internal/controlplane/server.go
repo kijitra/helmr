@@ -29,6 +29,7 @@ import (
 	"github.com/helmrdotdev/helmr/internal/email"
 	"github.com/helmrdotdev/helmr/internal/identity"
 	"github.com/helmrdotdev/helmr/internal/ids"
+	"github.com/helmrdotdev/helmr/internal/localmodel"
 	"github.com/helmrdotdev/helmr/internal/org"
 	"github.com/helmrdotdev/helmr/internal/secret"
 	"github.com/helmrdotdev/helmr/internal/session"
@@ -57,6 +58,7 @@ type SecretManager interface {
 }
 
 type Server struct {
+	localModel                 *localmodel.Gateway
 	slackConfig                *SlackConfig
 	diagnosticDB               db.TxDB
 	diagnosticBounds           diagnostic.Bounds
@@ -101,6 +103,7 @@ const (
 )
 
 type ServerConfig struct {
+	LocalModel                 *localmodel.Gateway
 	Slack                      *SlackConfig
 	DiagnosticDB               db.TxDB
 	DiagnosticBounds           diagnostic.Bounds
@@ -237,6 +240,7 @@ func NewServer(cfg ServerConfig) (http.Handler, error) {
 		return nil, errors.New("allocation owner is required")
 	}
 	server := &Server{
+		localModel:                 cfg.LocalModel,
 		slackConfig:                cfg.Slack,
 		allocator:                  cfg.Allocator,
 		environmentExecutionLimits: cfg.EnvironmentExecutionLimits,

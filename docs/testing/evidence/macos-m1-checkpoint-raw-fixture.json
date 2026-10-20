@@ -1,0 +1,157 @@
+{
+  "checkpoint_cycle_verified": true,
+  "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+  "duration_seconds": 6.335680625008536,
+  "evidence_scope": "Historical raw-NBD fixture before LocalVersion integration; not current-helper qualification or Worker acceptance.",
+  "host_samples": [
+    {
+      "free_disk_bytes": 49948782592,
+      "free_memory_bytes": 2882928640
+    },
+    {
+      "free_disk_bytes": 49948762112,
+      "free_memory_bytes": 2706620416
+    },
+    {
+      "free_disk_bytes": 49948753920,
+      "free_memory_bytes": 2707341312
+    },
+    {
+      "free_disk_bytes": 49948602368,
+      "free_memory_bytes": 2360131584
+    }
+  ],
+  "identity": {
+    "helper": {
+      "bytes": 7507632,
+      "sha256": "d133535aa622d8f39ac7012dd2d531fb59789ec383c89682bc9aac62809d7747"
+    },
+    "host": "sha256:2dcef3a06618d6b015c091f7a5b74e5a45277539263372f6712e2ec8b957b306",
+    "model": "MacBookPro18,2",
+    "os": "26.6.2",
+    "uid": 501
+  },
+  "manifest": {
+    "config": {
+      "binding": "Code-Hex/vz/v3@v3.8.0",
+      "computer": "unix-nbd",
+      "console": "virtio",
+      "cpu": 1,
+      "disk_mib": [
+        64,
+        64
+      ],
+      "mac": "02:fc:00:00:00:02",
+      "nic": "disconnected-filehandle",
+      "ram_mib": 512,
+      "vsock": 10789
+    },
+    "contract": "helmr.macos-checkpoint-experiment.v1",
+    "identity": {
+      "helper": {
+        "bytes": 7507632,
+        "sha256": "d133535aa622d8f39ac7012dd2d531fb59789ec383c89682bc9aac62809d7747"
+      },
+      "host": "sha256:2dcef3a06618d6b015c091f7a5b74e5a45277539263372f6712e2ec8b957b306",
+      "model": "MacBookPro18,2",
+      "os": "26.6.2",
+      "uid": 501
+    },
+    "objects": {
+      "computer.raw": {
+        "bytes": 67108864,
+        "sha256": "930dc7a0be9e8b91ade01d258a54b37e465c525a1a51c03495a4bdb11a24245b"
+      },
+      "initramfs": {
+        "bytes": 2640185,
+        "sha256": "4b01d5c3b82c4562af7fe5cbe15801f52f113ddb944672bd4ab3ce3c958450e6"
+      },
+      "kernel": {
+        "bytes": 36306944,
+        "sha256": "83f0f9170a21ba2b4b8fca0aa1931ee94ff0c117f4e20c6062749a5c0b5d184a"
+      },
+      "machine-id": {
+        "bytes": 70,
+        "sha256": "1d6fd47ecced53656b4ad0373bc2c23861666e44609638f1d2ba0bb50f66ff30"
+      },
+      "oracle.json": {
+        "bytes": 193,
+        "sha256": "a64a0eca55426db0d496320afd3afecc4331ac6aea26cf472190d68343e906cc"
+      },
+      "scratch.raw": {
+        "bytes": 67108864,
+        "sha256": "930dc7a0be9e8b91ade01d258a54b37e465c525a1a51c03495a4bdb11a24245b"
+      },
+      "state.vz": {
+        "bytes": 18354176,
+        "sha256": "a6a0346e6c19a37cf3349234d773c68695427647e153e8cbf21858ed584cd2a0"
+      }
+    }
+  },
+  "provenance": {
+    "base_commit": "be91efd595504e79a9574e3e3e1740316ced746a",
+    "redaction": "boot-session UUID hashed consistently in both identity records; no guest data redacted",
+    "source_state": "uncommitted experimental helper identified by binary digest; not an exact reproducible source commit"
+  },
+  "restored": {
+    "binding": "Code-Hex/vz v3.8.0",
+    "clean": true,
+    "continued": {
+      "boot_count": 1,
+      "disk_sequence": [
+        3,
+        3
+      ],
+      "frozen": false,
+      "nonce": "67da1278804add8c361402f08ec874921a8799e1e6d254a35ecaf3a4a83359ba",
+      "offset": 4288,
+      "pid": 390,
+      "sequence": 3,
+      "start": "8"
+    },
+    "disk": "private-unix-nbd",
+    "frozen": {
+      "boot_count": 1,
+      "disk_sequence": [
+        2,
+        2
+      ],
+      "frozen": true,
+      "nonce": "67da1278804add8c361402f08ec874921a8799e1e6d254a35ecaf3a4a83359ba",
+      "offset": 4224,
+      "pid": 390,
+      "sequence": 2,
+      "start": "8"
+    },
+    "guest_clean_shutdown": false,
+    "guest_memory_mib": 512,
+    "guest_vcpus": 1,
+    "mode": "checkpoint-restore",
+    "restored_paused": true,
+    "state": "stopped"
+  },
+  "saved": {
+    "binding": "Code-Hex/vz v3.8.0",
+    "clean": true,
+    "disk": "private-unix-nbd",
+    "frozen": {
+      "boot_count": 1,
+      "disk_sequence": [
+        2,
+        2
+      ],
+      "frozen": true,
+      "nonce": "67da1278804add8c361402f08ec874921a8799e1e6d254a35ecaf3a4a83359ba",
+      "offset": 4224,
+      "pid": 390,
+      "sequence": 2,
+      "start": "8"
+    },
+    "guest_clean_shutdown": false,
+    "guest_memory_mib": 512,
+    "guest_vcpus": 1,
+    "mode": "checkpoint-save",
+    "state": "stopped"
+  },
+  "worker_verified": false
+}

@@ -27,6 +27,9 @@ func (server *Server) workerAgentMCP(w http.ResponseWriter, r *http.Request, req
 		return
 	}
 	switch call.Tool {
+	case "infer_local_model":
+		server.workerAgentLocalModel(w, r, request.RequestID, caller, call.Arguments)
+		return
 	case "list_agents":
 		server.workerAgentListAgents(w, r, request.RequestID, caller, call.Arguments)
 		return

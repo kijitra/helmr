@@ -16,9 +16,10 @@ let
     builtins.readFile ../../internal/version/runtime-dependencies.json
   );
   nodeRelease = runtimeDependencies.node;
-  # Digest-pinned linux/amd64 Debian images: the builder's base and the source
+  # Digest-pinned target-architecture Debian images: the builder's base and the source
   # of the Runtime's C/C++ libraries.
-  debianImages = builtins.fromJSON (builtins.readFile ./debian-images.json);
+  runtimeTargetSystem = if system == "aarch64-linux" then "aarch64-linux" else "x86_64-linux";
+  debianImages = builtins.fromJSON (builtins.readFile (if system == "aarch64-linux" then ./debian-images.aarch64.json else ./debian-images.json));
   debianImage =
     pin:
     pkgs.dockerTools.pullImage {
@@ -26,7 +27,7 @@ let
       finalImageName = pin.imageName;
       inherit (pin) finalImageTag;
       os = "linux";
-      arch = "amd64";
+      arch = if system == "aarch64-linux" then "arm64" else "amd64";
     };
   nodeArchive =
     targetSystem:
@@ -63,7 +64,7 @@ let
   runtimeReleaseUnchecked = pkgs.callPackage ./runtime-release.nix {
     inherit squashfsTools platformEntries;
     nodeVersion = nodeRelease.version;
-    nodeRelease = nodeArchive "x86_64-linux";
+    nodeRelease = nodeArchive runtimeTargetSystem;
     debianRuntimeImage = debianImage debianImages.runtimeLibraries;
   };
   compiler = pkgs.callPackage ./compiler.nix {
@@ -83,7 +84,7 @@ let
       squashfsTools
       ;
     baseImage = debianImage debianImages.builderBase;
-    nodeArchive = nodeArchive "x86_64-linux";
+    nodeArchive = nodeArchive runtimeTargetSystem;
     bunArchive = pkgsBun.bun.src;
   };
   buildGo127Module =
@@ -163,6 +164,7 @@ let
         cp -a ${runtimeReleaseUnchecked} "$out"
       '';
   firecrackerReleaseVersion = "1.17.0";
+  firecrackerArchitecture = if system == "aarch64-linux" then "aarch64" else "x86_64";
   worker = pkgs.callPackage ./worker.nix {
     buildGoModule = buildGo127Module;
   };
@@ -171,8 +173,8 @@ let
     version = firecrackerReleaseVersion;
 
     src = pkgs.fetchurl {
-      url = "https://github.com/firecracker-microvm/firecracker/releases/download/v${firecrackerReleaseVersion}/firecracker-v${firecrackerReleaseVersion}-x86_64.tgz";
-      hash = "sha256-BglKEQiunoKqTCOndaqSdY9T8RddQiJw2dYWLLmt5Vg=";
+      url = "https://github.com/firecracker-microvm/firecracker/releases/download/v${firecrackerReleaseVersion}/firecracker-v${firecrackerReleaseVersion}-${firecrackerArchitecture}.tgz";
+      hash = if system == "aarch64-linux" then "sha256-41Hr5Peha1hzu9UQBdLmdnEDz/TV68gp3y0/lak+IlY=" else "sha256-BglKEQiunoKqTCOndaqSdY9T8RddQiJw2dYWLLmt5Vg=";
     };
 
     installPhase = ''
@@ -180,9 +182,9 @@ let
 
       release_dir=.
       install -d "$out/bin" "$out/share/firecracker"
-      install -m 0755 "$release_dir/cpu-template-helper-v${firecrackerReleaseVersion}-x86_64" "$out/bin/cpu-template-helper"
-      install -m 0755 "$release_dir/firecracker-v${firecrackerReleaseVersion}-x86_64" "$out/bin/firecracker"
-      install -m 0755 "$release_dir/jailer-v${firecrackerReleaseVersion}-x86_64" "$out/bin/jailer"
+      install -m 0755 "$release_dir/cpu-template-helper-v${firecrackerReleaseVersion}-${firecrackerArchitecture}" "$out/bin/cpu-template-helper"
+      install -m 0755 "$release_dir/firecracker-v${firecrackerReleaseVersion}-${firecrackerArchitecture}" "$out/bin/firecracker"
+      install -m 0755 "$release_dir/jailer-v${firecrackerReleaseVersion}-${firecrackerArchitecture}" "$out/bin/jailer"
       install -m 0644 "$release_dir/LICENSE" "$release_dir/NOTICE" "$release_dir/THIRD-PARTY" "$out/share/firecracker/"
 
       runHook postInstall
@@ -229,7 +231,7 @@ in
   bun = pkgsBun.bun;
   apko = if pkgsUnstable ? apko then pkgsUnstable.apko else pkgs.apko;
 }
-// lib.optionalAttrs (system == "x86_64-linux") (rec {
+// lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") (rec {
   inherit
     substrateGenerator
     compiler

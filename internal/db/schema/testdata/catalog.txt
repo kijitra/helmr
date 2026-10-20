@@ -950,17 +950,21 @@ column users.id uuid not null
 column users.primary_email text
 column users.profile_image_url text
 column users.updated_at timestamp with time zone not null default now()
+column vm_platforms.apple_vz jsonb
+column vm_platforms.arch text not null default 'x86_64'::text
+column vm_platforms.backend text not null default 'firecracker'::text
+column vm_platforms.contract text not null default 'helmr.vm-runtime.v0'::text
 column vm_platforms.cpu_template_digest text
 column vm_platforms.descriptor_digest text not null
-column vm_platforms.firecracker_digest text not null
-column vm_platforms.firecracker_version text not null
+column vm_platforms.firecracker_digest text
+column vm_platforms.firecracker_version text
 column vm_platforms.host_kernel_release text not null
 column vm_platforms.id text not null
 column vm_platforms.initramfs_digest text not null
 column vm_platforms.kernel_digest text not null
 column vm_platforms.last_seen_at timestamp with time zone not null default now()
 column vm_platforms.rootfs_digest text not null
-column vm_platforms.snapshot_format_version text not null
+column vm_platforms.snapshot_format_version text
 column worker_group_tokens.created_at timestamp with time zone not null default now()
 column worker_group_tokens.id uuid not null
 column worker_group_tokens.last_used_at timestamp with time zone
@@ -1840,6 +1844,7 @@ constraint vm_platforms c CHECK (initramfs_digest ~ '^sha256:[0-9a-f]{64}$'::tex
 constraint vm_platforms c CHECK (kernel_digest ~ '^sha256:[0-9a-f]{64}$'::text)
 constraint vm_platforms c CHECK (rootfs_digest ~ '^sha256:[0-9a-f]{64}$'::text)
 constraint vm_platforms c CHECK (snapshot_format_version ~ '^[0-9]+\.[0-9]+\.[0-9]+$'::text)
+constraint vm_platforms c vm_platform_backend_payload CHECK (backend = 'firecracker'::text AND (arch = ANY (ARRAY['x86_64'::text, 'aarch64'::text])) AND contract = 'helmr.vm-runtime.v0'::text AND apple_vz IS NULL AND firecracker_digest IS NOT NULL AND firecracker_version IS NOT NULL AND snapshot_format_version IS NOT NULL OR backend = 'apple-vz'::text AND arch = 'aarch64'::text AND contract = 'helmr.vm-runtime.v1'::text AND firecracker_digest IS NULL AND firecracker_version IS NULL AND snapshot_format_version IS NULL AND cpu_template_digest IS NULL AND apple_vz IS NOT NULL AND COALESCE(jsonb_typeof(apple_vz) = 'object'::text AND apple_vz ?& ARRAY['helper_digest'::text, 'os_build'::text, 'hardware_model'::text, 'installation_digest'::text, 'key_domain_digest'::text, 'boot_session_digest'::text, 'state_format'::text] AND (apple_vz - ARRAY['helper_digest'::text, 'os_build'::text, 'hardware_model'::text, 'installation_digest'::text, 'key_domain_digest'::text, 'boot_session_digest'::text, 'state_format'::text]) = '{}'::jsonb AND jsonb_typeof(apple_vz -> 'helper_digest'::text) = 'string'::text AND (apple_vz ->> 'helper_digest'::text) ~ '^sha256:[0-9a-f]{64}$'::text AND jsonb_typeof(apple_vz -> 'installation_digest'::text) = 'string'::text AND (apple_vz ->> 'installation_digest'::text) ~ '^sha256:[0-9a-f]{64}$'::text AND jsonb_typeof(apple_vz -> 'key_domain_digest'::text) = 'string'::text AND (apple_vz ->> 'key_domain_digest'::text) ~ '^sha256:[0-9a-f]{64}$'::text AND jsonb_typeof(apple_vz -> 'boot_session_digest'::text) = 'string'::text AND (apple_vz ->> 'boot_session_digest'::text) ~ '^sha256:[0-9a-f]{64}$'::text AND jsonb_typeof(apple_vz -> 'os_build'::text) = 'string'::text AND octet_length(apple_vz ->> 'os_build'::text) >= 1 AND octet_length(apple_vz ->> 'os_build'::text) <= 255 AND (apple_vz ->> 'os_build'::text) !~ '(^[[:space:]])|([[:space:]]$)|[[:cntrl:]]'::text AND jsonb_typeof(apple_vz -> 'hardware_model'::text) = 'string'::text AND octet_length(apple_vz ->> 'hardware_model'::text) >= 1 AND octet_length(apple_vz ->> 'hardware_model'::text) <= 255 AND (apple_vz ->> 'hardware_model'::text) !~ '(^[[:space:]])|([[:space:]]$)|[[:cntrl:]]'::text AND (apple_vz ->> 'state_format'::text) = 'helmr.apple-vz-state.v1'::text, false))
 constraint vm_platforms p PRIMARY KEY (id)
 constraint worker_group_tokens c CHECK (octet_length(token_hash) = 32)
 constraint worker_group_tokens p PRIMARY KEY (id)

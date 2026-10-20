@@ -1,0 +1,438 @@
+{
+  "schema": 1,
+  "date": "2026-10-20",
+  "scope": "20 bounded synthetic LocalVersion VM checkpoint cycles and storage fault probes on one M3 Max; not a full Worker",
+  "host": {
+    "chip": "Apple M3 Max",
+    "model": "Mac15,9",
+    "memory_bytes": 137438953472,
+    "macos": "27.0.1",
+    "os_build": "26A434",
+    "architecture": "arm64",
+    "concurrent_gpu_workload": true
+  },
+  "source_commit": "cbeb139750485bf1105c23abd67e12d01793d986",
+  "source_validation": {
+    "commit": "cbeb139750485bf1105c23abd67e12d01793d986",
+    "files": 2658,
+    "matched": true
+  },
+  "source_files": {
+    "dev/macos/probe.py": "770b0da58dd5c67e997142fd4d5834eabe7fc7c1d43957cc5981c2d9cca6383a",
+    "dev/macos/test_probe.py": "77b595a18d8166af3d6e12264b0fac9141c9b865a00ae2d26540ff610674f482",
+    "dev/macos/checkpoint.py": "821a39d6cce25538399d694078555722199f5f76249e77f57df5397e958694d5",
+    "dev/macos/build.sh": "e608009beabced2d1b390096a993dd386cfd4d4d9f6373c49cf22cd11f86cff0",
+    "dev/macos/entitlements.plist": "4bda2d2d4b18eb7bf94a9096ff2cfed3d3073cf7da9aa25cf30b702c7fb7f907",
+    "dev/macos/fixture/main.go": "3b32e61e0435fca3043c7daa5e179510872c688b206921d14bfd98056de02dc1",
+    "dev/macos/helper/main.go": "e72f1cb472b17cf9146008a1b235795482af2e1cf61d6599ed207c7b67131bf0",
+    "dev/macos/helper/checkpoint.go": "7e9795d780d41f3d670cbd42deae731a69489297dd1a74942ce2321a54e42aed",
+    "dev/macos/helper/version_disk.go": "e83aa2de761aa9ed6e2467f8f91fd86558c1e9735c5a7a548aafc1d02aacf746",
+    "dev/macos/helper/go.mod": "9f3f4730b8c7b6d04d1004afb61db55a1a673b39a1a60553a18542fb96a50b52",
+    "dev/macos/helper/go.sum": "159dae23be401c91704922b5a3c1380a7a7dd21231c65e27b0d51d4388831d9f",
+    "internal/disk/device_unix.go": "cbe3e0d7090e6aed3bdf24d64ec6fcf91826e1dfc2817787dae8d136046fd82d",
+    "internal/disk/nbd.go": "bfb538026efe25ae39951f4e36fca4d33f2f70f0e50d486047bac0327a25b76a",
+    "internal/nbd/server.go": "2d2636d957cb2f311a8e5500cfda4278b47bb5e40754c329f736daa6129da94a",
+    "internal/nbd/transmission.go": "ec12e64ea9452195dcf76efd0c9472b16644fa32ab046c5cba5c6aae266789cc"
+  },
+  "build_provenance": {
+    "go": "go1.27.1 darwin/arm64",
+    "go_archive_sha256": "ee215d57e0ec269c60cc9ceca68e6bda321ba9ee5afe24f4b0988703c2d87d12",
+    "helper": {
+      "bytes": 8416416,
+      "sha256": "ac5bb8149125079d257fd40494a95db96665f546b16eac1f38fbe2b8313b981f"
+    },
+    "signature": "ad-hoc virtualization entitlement; codesign --verify --strict passed",
+    "embedded_vcs": "not embedded: build used SHA-verified source archive",
+    "build_parallel_packages": 1,
+    "gomaxprocs": 2
+  },
+  "boot_inputs": {
+    "apk_sha256": "1cb07a2d56c685194cadde1c2f436a71eb4fd1aeab9458c4bf249e2b467f5bdb",
+    "fixture_sha256": "82727dbdc438de677f3de7abe596763e1795c3a0a4d6d8bddd4364833ccaa5f2",
+    "kernel_sha256": "83f0f9170a21ba2b4b8fca0aa1931ee94ff0c117f4e20c6062749a5c0b5d184a",
+    "initramfs_sha256": "3454632f19a84c78ec1d482bd679d8d221655997029b8977608aaac69523c53e",
+    "kernel_release": "6.18.56-0-virt",
+    "source": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/linux-virt-6.18.56-r0.apk"
+  },
+  "validation": {
+    "python_tests": 47,
+    "python_result": "passed on local and M3",
+    "go_race": {
+      "packages": [
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/disk",
+          "result": "pass",
+          "seconds": 37.973
+        },
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/nbd",
+          "result": "pass",
+          "seconds": 2.385
+        },
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/computerhost",
+          "result": "pass",
+          "seconds": 30.304
+        },
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/vmplatform",
+          "result": "pass",
+          "seconds": 1.374
+        },
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/workerapi",
+          "result": "pass",
+          "seconds": 1.37
+        }
+      ],
+      "top_level_tests": 226,
+      "passed_records": 564,
+      "skipped_records": 1,
+      "skipped": [
+        {
+          "package": "github.com/helmrdotdev/helmr/internal/computerhost",
+          "test": "TestPreparedProgramMemoHitPreservesSnapshotAndTargetAuthority",
+          "reason": "artifact snapshots require Linux"
+        }
+      ]
+    },
+    "configuration": [
+      "validate",
+      "validate-nbd"
+    ],
+    "boot_smoke": "passed; init execution attempt observed; not proof of full guest readiness"
+  },
+  "attempted": 20,
+  "passed": 20,
+  "cycles": [
+    {
+      "cycle": 1,
+      "duration_seconds": 6.155420833383687,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 26563952640,
+      "min_free_disk_bytes": 891468898304,
+      "raw_report_sha256": "f26b491ec5afe43fde82996cafbd8fc59bf82d77b57aca71e065f68bac0c78e3"
+    },
+    {
+      "cycle": 2,
+      "duration_seconds": 6.5978942916262895,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 26400702464,
+      "min_free_disk_bytes": 891207557120,
+      "raw_report_sha256": "27d41adf4aef45191a0d20c187b48cf715396456b2975fc3616cba93144cb678"
+    },
+    {
+      "cycle": 3,
+      "duration_seconds": 6.011839583341498,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 25152815104,
+      "min_free_disk_bytes": 891206156288,
+      "raw_report_sha256": "23fcf7546d9288f202ab0db84db82ced8fcc6e4f4d9e9b796b453e1375712e44"
+    },
+    {
+      "cycle": 4,
+      "duration_seconds": 7.002400500001386,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 25113296896,
+      "min_free_disk_bytes": 891205025792,
+      "raw_report_sha256": "b7a5df59a2fae1f574895cd5d4366d47d9cfbb1dcd6c4139ee9004da2c5fbe95"
+    },
+    {
+      "cycle": 5,
+      "duration_seconds": 6.265922166639939,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24536334336,
+      "min_free_disk_bytes": 891206717440,
+      "raw_report_sha256": "a8e6b676f9a22fdb19053653cbbb86072d6ecc6f2e1d3833d7f85f976aeb2974"
+    },
+    {
+      "cycle": 6,
+      "duration_seconds": 6.0220506666228175,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24893554688,
+      "min_free_disk_bytes": 891206668288,
+      "raw_report_sha256": "361dc5e9ff17e522772ddeb79a1e3ed081dfc6936fe906b6b9ea272e9ffcd5e9"
+    },
+    {
+      "cycle": 7,
+      "duration_seconds": 6.691368208325002,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 25094078464,
+      "min_free_disk_bytes": 891206504448,
+      "raw_report_sha256": "b96247955ddf7d0576f842b2e7ae023cc317d8132f8ca2767155fdbfc56855e9"
+    },
+    {
+      "cycle": 8,
+      "duration_seconds": 5.866048124968074,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24823201792,
+      "min_free_disk_bytes": 891206008832,
+      "raw_report_sha256": "f99b02e0db2f6a9cf10e297a35655292f16c4db034bb933c77df469c62c93396"
+    },
+    {
+      "cycle": 9,
+      "duration_seconds": 5.828375291719567,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24911446016,
+      "min_free_disk_bytes": 891147300864,
+      "raw_report_sha256": "5f4a2d1990a7dab16deedc8f2e01143f42fce6e18b474fd349bec6a27e924a61"
+    },
+    {
+      "cycle": 10,
+      "duration_seconds": 5.326867041701917,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24743821312,
+      "min_free_disk_bytes": 891043495936,
+      "raw_report_sha256": "d7868ab9f5024cdd1570b98939c0dcdcc9b8c4d62af60a9e4520a623e7c57a79"
+    },
+    {
+      "cycle": 11,
+      "duration_seconds": 5.960026749991812,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24458625024,
+      "min_free_disk_bytes": 891000856576,
+      "raw_report_sha256": "e195c0c97392afe9f817394a8f4f82f4e5458ad0c369c9fd785b1f1aefe13b11"
+    },
+    {
+      "cycle": 12,
+      "duration_seconds": 6.361161708307918,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24177704960,
+      "min_free_disk_bytes": 890999713792,
+      "raw_report_sha256": "dccfac722d9436e13718ce66feff336300d96a205b2ffecb5d69d67ee3060a10"
+    },
+    {
+      "cycle": 13,
+      "duration_seconds": 6.428091625042725,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24417501184,
+      "min_free_disk_bytes": 890998415360,
+      "raw_report_sha256": "4939284434edf1fad2523e17bd2fe0feda85302af87b4e168a5fb5baa103a4c5"
+    },
+    {
+      "cycle": 14,
+      "duration_seconds": 5.962397499999497,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24340021248,
+      "min_free_disk_bytes": 890997530624,
+      "raw_report_sha256": "f7bbef644bb09b78f5fad318aa09634518dadd522c7b777875e42a7856d47026"
+    },
+    {
+      "cycle": 15,
+      "duration_seconds": 5.8008900416316465,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24398102528,
+      "min_free_disk_bytes": 890997358592,
+      "raw_report_sha256": "fb0cc25ca2451f5ea0c4a8c774067f218c1c70c6d7edbe49eb609dee8d6888e7"
+    },
+    {
+      "cycle": 16,
+      "duration_seconds": 5.541050041618291,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24443863040,
+      "min_free_disk_bytes": 890997346304,
+      "raw_report_sha256": "a1c4656ba09ddd80d7c0227ed13a6dc33c3bcf951f9d0d046727146f1feee6a0"
+    },
+    {
+      "cycle": 17,
+      "duration_seconds": 5.881341458356474,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24738922496,
+      "min_free_disk_bytes": 891224985600,
+      "raw_report_sha256": "52f97595fe8c327cfcd63231ae97ac20af9f39e42575b168ca65754cbb8ab956"
+    },
+    {
+      "cycle": 18,
+      "duration_seconds": 5.87835166673176,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24692785152,
+      "min_free_disk_bytes": 891224903680,
+      "raw_report_sha256": "4f2a134f07ea7fd40218003d2aed87c66e16153074e69ed2c67ce34637b4e55e"
+    },
+    {
+      "cycle": 19,
+      "duration_seconds": 5.734600166673772,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24681938944,
+      "min_free_disk_bytes": 891225067520,
+      "raw_report_sha256": "f163db82a96f834ecd49d0d299f30749bfd91c071fc58e3e33e03211fa3d8399"
+    },
+    {
+      "cycle": 20,
+      "duration_seconds": 5.815452958398964,
+      "ram_process_and_fd_preserved": true,
+      "source_sequence": 2,
+      "continued_sequence": 3,
+      "boot_count": 1,
+      "disk_oracles_and_reopen_verified": true,
+      "online_cut_preserved_after_later_writes": true,
+      "cleanup": "both helpers reaped; exact image detached; private artifacts removed",
+      "min_free_memory_bytes": 24298766336,
+      "min_free_disk_bytes": 891224387584,
+      "raw_report_sha256": "219b1ad22b2d13598d9d9c867e943f42b56047b160bd679fcdef9c67a11f92cf"
+    }
+  ],
+  "storage_faults": {
+    "quota": {
+      "enospc_inside_owned_volume": true,
+      "bytes_written": 2104492032,
+      "image_bytes": 2147483648
+    },
+    "controller_death": {
+      "controller_killed_after_attachment": true,
+      "next_admission_blocked": true,
+      "owned_attachment_reconciled": true,
+      "vm_created": false
+    }
+  },
+  "initial_failure": {
+    "stage": "configuration validation before helper launch",
+    "error": "hdiutil attach plist contaminated by merged command streams",
+    "quarantine_retained": true,
+    "fix": "stdout and stderr drained separately with combined output cap and watchdog through process exit",
+    "regression_red": "44-test intermediate suite: five failures and two errors against old implementation",
+    "recovery": "known exact image/mount rechecked under stable lock; normal detach; absence confirmed; only owned artifacts removed",
+    "force_detach": false
+  },
+  "artifact_hashes": {
+    "python-tests-fixed.log": "65011efce02dd267d13bcce1313b2277ca9bcaac4a8b44b0927982e5f2e1eb03",
+    "go-race-tests.jsonl": "9259643dd9c110d3e15bb52b61a34777e34f4ae10f55681dc97e9ea24cd20f42",
+    "go-race-tests.stderr": "a1b7d2073be0857ebaae5a68e236259730e20a3f8a4fb2ae8fe8cc4eefda151e",
+    "config-validation-fixed.json": "b67cff5e82538e48b9c9d96313c14138204d92fe68a039fc5a4553ef434fcb03",
+    "nbd-config-validation.json": "9631dcdb16dd6c94b92dc4513a55f60fb3b4d0a8d488b69a5478dd6c7e896171",
+    "smoke.json": "1f33df27ec2758accb4d4983399a8e63ad0563691b4989baaa8e7797a812b083",
+    "storage-faults.json": "afd3f5d5e0840f9b30aa650da8c2dd652a5224ef249a21321f74e0daadaea4d8",
+    "recovery-before.json": "b11fe704cc3e1c58e412271c35c52190d9c5afbc66b048482a42ac30c3027f20",
+    "recovery-after.json": "ae64d35bf272848e013127ba1f048b04708466b79086081a748a854a6cb274f4",
+    "source-fixed-manifest.json": "46e00b67743ce4b4c29bbca8edd0e32099c4e1161d517fd012243d6376a6012a"
+  },
+  "privacy": "Raw host boot UUID, private paths and raw per-run reports omitted; raw artifacts retained by operator. No credentials, model data or workload audio included.",
+  "review": {
+    "assurance": "Full Review",
+    "independent_codex": "plan, diff and explicit security boundary review clear",
+    "cross_model": "unavailable: nix/Claude review wrappers not installed"
+  },
+  "unqualified": [
+    "full Worker startup and actual Agent jobs",
+    "isolated macOS artifact verifier",
+    "macOS network/secret transport integration",
+    "production native checkpoint publication and key recovery",
+    "ext4 syncfs workloads",
+    "long-duration responsiveness and thermals",
+    "other M3 configurations and all Mac mini models"
+  ]
+}
