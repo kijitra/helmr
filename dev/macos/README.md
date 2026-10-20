@@ -1,5 +1,9 @@
 # Bounded macOS VM experiment
 
+For the separate Lima/Linux/KVM path used by the M3 full-stack experiment, see
+[the architecture, dependencies and setup status](../../docs/implementation/macos-lima-runtime.md).
+The two execution paths have different qualification evidence.
+
 This is an **experimental safety probe**, not a macOS Helmr Worker. It uses
 [Code-Hex/vz v3.8.0](https://github.com/Code-Hex/vz/tree/v3.8.0), the Go binding
 used by Lima and vfkit. No Swift or custom VMM implementation is needed.
