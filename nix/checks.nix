@@ -190,9 +190,12 @@ in
       '';
   worker-host-target =
     assert lib.assertMsg (
-      (system == "x86_64-linux") == (helmrPackages ? workerHost)
-    ) "workerHost must be exported only for x86_64-linux";
+      (system == "x86_64-linux" || system == "aarch64-linux") == (helmrPackages ? workerHost)
+    ) "workerHost must be exported only for supported Linux architectures";
     pkgs.runCommand "worker-host-target-check" { } "touch $out";
+}
+// lib.optionalAttrs (system == "aarch64-linux") {
+  worker-host = helmrPackages.workerHost;
 }
 // lib.optionalAttrs (system == "x86_64-linux") {
   firecracker-host-module = firecrackerHostModuleCheck;

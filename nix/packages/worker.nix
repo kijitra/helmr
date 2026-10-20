@@ -1,5 +1,6 @@
 {
   lib,
+  stdenv,
   buildGoModule,
 }:
 
@@ -34,14 +35,14 @@ buildGoModule {
 
   preBuild = ''
     export CGO_ENABLED=0
-    export GOARCH=amd64
+    export GOARCH=${if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64"}
     export GOOS=linux
   '';
   doCheck = false;
   postInstall = ''
-    if [ -x "$out/bin/linux_amd64/worker" ]; then
-      install -m 0755 "$out/bin/linux_amd64/worker" "$out/bin/worker"
-      rm -rf "$out/bin/linux_amd64"
+    if [ -x "$out/bin/linux_${if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64"}/worker" ]; then
+      install -m 0755 "$out/bin/linux_${if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64"}/worker" "$out/bin/worker"
+      rm -rf "$out/bin/linux_${if stdenv.hostPlatform.isAarch64 then "arm64" else "amd64"}"
     fi
     test -x "$out/bin/worker"
   '';

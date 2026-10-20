@@ -1,8 +1,9 @@
 # macOS runtime through Lima: experimental setup
 
 Status as of 2026-10-20: the remote M3 Max runs a real control plane, console,
-storage services and qualified Worker inside an ARM64 Linux VM. Deployment of a
-real Agent and its local-model interaction have not passed acceptance. This is
+storage services and qualified Worker inside an ARM64 Linux VM. A deployed Agent
+has completed local-model inference, durable result publication, RAM checkpoint
+restore, and an ask/answer Turn with its original process state retained. This is
 not a complete installation guide or a supported macOS release.
 
 ## Architecture and dependency ownership
@@ -26,7 +27,8 @@ flowchart TB
       WORKER --> FC --> AGENT
     end
     VZ --> LIMA --> LINUX
-    CP -. "local-model integration pending" .-> LLM
+    AGENT -->|"Session-bound MCP via Worker"| CP
+    CP -->|"Explicit loopback SSH forward"| LLM
   end
 ```
 
@@ -48,7 +50,7 @@ Linux so that Firecracker can start the inner Agent microVMs.
 | Docker and BuildKit | Build Agent deployment bundles; run inside the outer Linux VM |
 | PostgreSQL 18.4 / ClickHouse 26.7.5.10 / MinIO | Local state, logs and S3-compatible storage; no cloud storage account required |
 | Go 1.27.1 / Bun 1.3.13 / Node 24.21.0 / apko | Build tools used in the Linux experiment |
-| Ollama | Already installed on the Mac; direct local inference verified, Agent integration pending |
+| Ollama | Already installed on the Mac; direct inference and deployed Agent inference verified |
 
 The separate [native VZ experiment](../../dev/macos/README.md) invokes vz directly
 to test VM state and disk transport. Its passing checkpoint tests do not prove
@@ -120,6 +122,10 @@ service. No host firewall change, public application listener or paid model API
 is needed. Private credentials, machine addresses and enrollment tokens must not
 be copied into this document or GitHub.
 
+The acceptance deployment is in **M3 Local / Mac Test**, not the empty local
+Production Environment. Select Mac Test in the console before inspecting Agents
+or deployments. `No current deployment` in Production does not describe Mac Test.
+
 The console listens on Linux loopback port 13000 and the control plane on 18080.
 Use explicit SSH local forwards to reach them from the Mac; for a second Mac,
 forward through its existing SSH connection too. The local developer login is a
@@ -130,16 +136,36 @@ development-only entry point. Do not expose this stack as a public service.
 | Gate | Current result |
 | --- | --- |
 | Nested Firecracker RAM checkpoint, original process exit, fresh-process restore | Passed in the M3 Linux VM using a dedicated fixture; not an Agent test |
-| ARM guest boot artifacts and verified runtime / builder / Worker builds | Passed with the in-progress ARM64 source changes |
+| ARM guest boot artifacts and verified runtime / builder / Worker builds | Passed with the ARM64 source changes on this branch |
 | Worker qualification | Passed, including verifier, cgroups, isolation and jailed guest health |
 | Real control plane, Worker, console and storage services | Running; rechecked 2026-10-20 |
-| Agent bundle and deployment | Incomplete; Buildx client file ownership currently blocks the acceptance build |
-| Existing Mac-local model | Direct Ollama inference passed; end-to-end Agent connection pending |
-| Fresh-checkout full setup, Agent ask/resume and long-duration coexistence | Not accepted |
+| Agent bundle and deployment | Built, verified, finalized and promoted in the local Mac Test Environment |
+| Existing Mac-local model | Deployed Agent received Japanese responses from the existing Ollama `qwen3.8:27b` model |
+| Agent ask and RAM resume | Passed after source VM termination: question answered, next Turn completed, same RAM marker/PID/init count and increasing Turn count |
+| Control plane and Nix-built Worker restart | Passed: same Session resumed from RAM and completed Turn 3 with the original process state |
+| Fresh-checkout full setup and long-duration coexistence | Not accepted |
 
-At the time this setup document was added, the ARM64 Firecracker identity,
-CPU evidence, schema, guest image, Nix and CLI changes were still local work in
-progress. The remote results above do not imply those changes have already been
-pushed or that the current PR head can reproduce the whole stack. Publish the
-implementation, exact validation evidence and complete setup procedure together
-before marking the PR ready for review.
+The branch includes ARM64 Firecracker identity, CPU evidence, schema, boot-image,
+Nix, CLI and allocation changes. Admission, allocation, preparation delivery and
+boot compare the admitted seed architecture with the selected platform. Unknown
+profiles and cross-architecture assignments remain rejected.
+
+The optional local-model gateway is wired only into the development control
+plane. It is scoped to one explicitly configured Environment and an exact
+running Turn, reuses authenticated MCP/vsock transport, and checks execution
+authority before, during and after inference. It allows one fixed model, literal
+loopback HTTP, one concurrent call and bounded prompt/response/deadline values.
+It rejects redirects and ignores HTTP proxy environment variables. In-flight HTTP
+cancellation does not establish immediate cessation inside the model server.
+
+The [Agent example](../../examples/mac-local-model/README.md) closes its MCP HTTP
+connection and clears its timer before completing a Turn. The earlier fetch-based
+example left asynchronous resources that delayed RAM capture; it was replaced
+rather than exempting those resources from the checkpoint verifier. The Worker
+must retain the existing static `CGO_ENABLED=0` build contract: a dynamic ad-hoc
+build cannot perform the verifier's all-thread privilege changes.
+
+See the [sanitized M3 acceptance record](../testing/evidence/macos-m3-local-model.json)
+for the exact evidence scope. Initial VM construction and full service bootstrap
+still need an independently repeated fresh-checkout procedure before this can be
+presented as a complete installer.

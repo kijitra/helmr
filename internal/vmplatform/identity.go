@@ -174,7 +174,7 @@ func (p Profile) validateSelector() error {
 	if p.EffectiveBackend() != BackendFirecracker || p.AppleVZ != nil {
 		return errors.New("unsupported or mixed runtime backend")
 	}
-	if p.Arch != "x86_64" || p.Contract != Contract {
+	if (p.Arch != "x86_64" && p.Arch != "aarch64") || p.Contract != Contract {
 		problems = append(problems, errors.New("runtime architecture or contract is not supported"))
 	}
 	for _, field := range []struct{ name, value string }{
@@ -213,6 +213,9 @@ func (p Profile) validateSelector() error {
 }
 
 func ArchitectureFromGo(value string) (string, error) {
+	if value == "arm64" {
+		return "aarch64", nil
+	}
 	if value == "amd64" {
 		return "x86_64", nil
 	}

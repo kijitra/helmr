@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 ALPINE_VERSION ?= 3.22.2
 ALPINE_BRANCH ?= v3.22
 ARCH ?= x86_64
@@ -9,6 +10,11 @@ endif
 ifeq ($(ARCH),x86_64)
 ALPINE_ARCH ?= x86_64
 APKO_ARCH ?= x86_64
+GO_ARCH := amd64
+else ifeq ($(ARCH),aarch64)
+ALPINE_ARCH ?= aarch64
+APKO_ARCH ?= aarch64
+GO_ARCH := arm64
 else
 $(error unsupported ARCH: $(ARCH))
 endif
@@ -28,6 +34,10 @@ MODLOOP ?= $(OUT)/modloop-virt
 ROOTFS ?= $(OUT)/rootfs.squashfs
 RUNTIME_ARTIFACTS ?= $(OUT)/runtime-artifacts.json
 NETBOOT_CHECKSUMS ?= ../guest/netboot.$(ARCH).sha256
+ifeq ($(ARCH),aarch64)
+BOOT_TOOLS_ARCHIVE ?= ../tools/out/aarch64/boot-tools.tar
+BOOT_TOOLS_IMAGE_ID_FILE ?= ../tools/out/aarch64/boot-tools.image-id
+endif
 BOOT_TOOLS_ARCHIVE ?= ../tools/out/boot-tools.tar
 BOOT_TOOLS_IMAGE_ID_FILE ?= ../tools/out/boot-tools.image-id
 BOOT_TOOLS_CONFIG ?= ../tools/apko.yaml
@@ -87,15 +97,15 @@ $(KERNEL): $(VMLINUX)
 	ruby -rzlib -rstringio -e 'data = File.binread(ARGV[0]); offset = data.index("\x1f\x8b\x08".b) or abort("gzip payload not found in #{ARGV[0]}"); File.binwrite(ARGV[1], Zlib::GzipReader.new(StringIO.new(data.byteslice(offset..))).read)' $< $@
 
 $(BOOT_TOOLS_ARCHIVE): $(BOOT_TOOLS_CONFIG) $(BOOT_TOOLS_LOCK) ../build-tools-image.sh $(REPO_ROOT)/flake.lock
-	BOOT_TOOLS_REBUILD=1 ../build-tools-image.sh $(BOOT_TOOLS_ARCHIVE) $(BOOT_TOOLS_IMAGE_ID_FILE)
+	ARCH=$(ARCH) BOOT_TOOLS_REBUILD=1 ../build-tools-image.sh $(BOOT_TOOLS_ARCHIVE) $(BOOT_TOOLS_IMAGE_ID_FILE)
 
 boot-tools-image: $(BOOT_TOOLS_ARCHIVE)
 	@if [ ! -s $(BOOT_TOOLS_IMAGE_ID_FILE) ] || ! docker image inspect "$$(cat $(BOOT_TOOLS_IMAGE_ID_FILE) 2>/dev/null)" >/dev/null 2>&1; then \
-		../build-tools-image.sh $(BOOT_TOOLS_ARCHIVE) $(BOOT_TOOLS_IMAGE_ID_FILE); \
+		ARCH=$(ARCH) ../build-tools-image.sh $(BOOT_TOOLS_ARCHIVE) $(BOOT_TOOLS_IMAGE_ID_FILE); \
 	fi
 
 $(INITRAMFS) $(KERNEL_MODULES) &: $(INITRAMFS_BASE) $(MODLOOP) $(BOOT_TOOLS_ARCHIVE) ../build-initramfs.sh | $(OUT) boot-tools-image
-	BOOT_TOOLS_IMAGE=$$(cat $(BOOT_TOOLS_IMAGE_ID_FILE)) ../build-initramfs.sh $(INITRAMFS) $(INITRAMFS_BASE) $(MODLOOP) $(KERNEL_MODULES)
+	ARCH=$(ARCH) BOOT_TOOLS_IMAGE=$$(cat $(BOOT_TOOLS_IMAGE_ID_FILE)) ../build-initramfs.sh $(INITRAMFS) $(INITRAMFS_BASE) $(MODLOOP) $(KERNEL_MODULES)
 
 apko-lock:
 	apko lock $(APKO_CONFIG) --arch $(APKO_ARCH) --output $(APKO_LOCK)
@@ -107,7 +117,7 @@ $(RUNTIME_ARTIFACTS): $(KERNEL) $(INITRAMFS) $(ROOTFS) ../boot-artifacts.mk
 	@set -eu; \
 	tmp="$@.tmp"; trap 'rm -f "$$tmp"' EXIT; \
 	printf '{\n  "schema": "helmr.runtime-artifacts.v0",\n  "arch": "%s",\n  "vm_runtime_contract": "helmr.vm-runtime.v0",\n  "kernel": {"path": "%s", "digest": "sha256:%s", "size_bytes": %s},\n  "initramfs": {"path": "%s", "digest": "sha256:%s", "size_bytes": %s},\n  "rootfs": {"path": "%s", "digest": "sha256:%s", "size_bytes": %s}\n}\n' \
-		"amd64" "$(notdir $(KERNEL))" "$$($(SHA256_COMMAND) "$(KERNEL)" | awk '{print $$1}')" "$$(wc -c < "$(KERNEL)" | tr -d ' ')" \
+		"$(GO_ARCH)" "$(notdir $(KERNEL))" "$$($(SHA256_COMMAND) "$(KERNEL)" | awk '{print $$1}')" "$$(wc -c < "$(KERNEL)" | tr -d ' ')" \
 		"$(notdir $(INITRAMFS))" "$$($(SHA256_COMMAND) "$(INITRAMFS)" | awk '{print $$1}')" "$$(wc -c < "$(INITRAMFS)" | tr -d ' ')" \
 		"$(notdir $(ROOTFS))" "$$($(SHA256_COMMAND) "$(ROOTFS)" | awk '{print $$1}')" "$$(wc -c < "$(ROOTFS)" | tr -d ' ')" > "$$tmp"; \
 	mv "$$tmp" "$@"; trap - EXIT

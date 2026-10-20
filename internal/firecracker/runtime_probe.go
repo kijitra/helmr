@@ -60,6 +60,12 @@ type HostRuntimeEvidence struct {
 	firecrackerPath string
 }
 
+func (evidence HostRuntimeEvidence) clone() HostRuntimeEvidence {
+	evidence.CPUShapes = append([]CPUShapeEvidence(nil), evidence.CPUShapes...)
+	evidence.Environment.ARM = evidence.Environment.ARM.Clone()
+	return evidence
+}
+
 type CPUShapeEvidence struct {
 	VCPUCount       int64  `json:"vcpu_count"`
 	CPUConfigDigest string `json:"cpu_config_digest"`
@@ -213,11 +219,12 @@ func deriveHostVMPlatform(evidence HostRuntimeEvidence) (vmplatform.Profile, err
 // diagnostic rather than restore equality fences. guest_cpu_config is kept in
 // the ordered CPUShapes map through its canonical digest.
 type RuntimeEnvironmentEvidence struct {
-	FirecrackerVersion string `json:"firecracker_version"`
-	KernelVersion      string `json:"kernel_version"`
-	MicrocodeVersion   string `json:"microcode_version"`
-	BIOSVersion        string `json:"bios_version"`
-	BIOSRevision       string `json:"bios_revision"`
+	ARM                *vmplatform.ARMCPUEnvironment `json:"arm,omitempty"`
+	FirecrackerVersion string                        `json:"firecracker_version"`
+	KernelVersion      string                        `json:"kernel_version"`
+	MicrocodeVersion   string                        `json:"microcode_version"`
+	BIOSVersion        string                        `json:"bios_version"`
+	BIOSRevision       string                        `json:"bios_revision"`
 }
 
 func ValidateCPUShapeEvidence(shapes []CPUShapeEvidence, maxVCPUCount int64) error {
@@ -378,8 +385,8 @@ func inspectHostRuntime(
 	if hostKernelRelease == "" || hostKernelRelease != strings.TrimSpace(hostKernelRelease) {
 		return HostRuntimeEvidence{}, errors.New("host kernel release is not canonical")
 	}
-	environment, err := inspectRuntimeEnvironment(
-		dependencies.readFile, firecrackerVersion, hostKernelRelease,
+	environment, err := inspectRuntimeEnvironmentForArch(
+		artifacts.Arch, dependencies.readFile, firecrackerVersion, hostKernelRelease,
 	)
 	if err != nil {
 		return HostRuntimeEvidence{}, err

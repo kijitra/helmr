@@ -33,12 +33,13 @@ func ReadBoot(ctx context.Context, database db.TxBeginner, host workergroup.Host
 			return err
 		}
 		var raw []byte
-		if err := tx.QueryRow(ctx, `SELECT spec.seed,platform.rootfs_digest
+		var platformArch string
+		if err := tx.QueryRow(ctx, `SELECT spec.seed,platform.rootfs_digest,platform.arch
  FROM computer_leases l JOIN computers c ON (c.environment_id,c.id)=(l.environment_id,l.computer_id)
  JOIN image_specs spec ON (spec.environment_id,spec.id)=(c.environment_id,c.image_spec_id)
  JOIN vm_platforms platform ON platform.id=l.vm_platform_id
  WHERE l.environment_id=$1 AND l.computer_id=$2 AND l.epoch=$3 AND c.deleted_at IS NULL AND c.integrity_fault_at IS NULL
- FOR NO KEY UPDATE OF c`, identity.EnvironmentID, identity.ComputerID, identity.Epoch).Scan(&raw, &result.RootfsDigest); err != nil {
+ FOR NO KEY UPDATE OF c`, identity.EnvironmentID, identity.ComputerID, identity.Epoch).Scan(&raw, &result.RootfsDigest, &platformArch); err != nil {
 			return err
 		}
 		if err := checkComputerDiskAuthority(ctx, tx, host, identity); err != nil {
@@ -48,7 +49,8 @@ func ReadBoot(ctx context.Context, database db.TxBeginner, host workergroup.Host
 		if err := json.Unmarshal(raw, &seed); err != nil {
 			return err
 		}
-		if seed.Profile != definition.ComputerSeedProfile || seed.MediaType != definition.ComputerSeedMediaType || !sha256sum.ValidDigest(seed.ArtifactDigest) || !sha256sum.ValidDigest(result.RootfsDigest) {
+		seedArch, err := definition.ArchitectureForSeedProfile(seed.Profile)
+		if err != nil || string(seedArch) != platformArch || seed.MediaType != definition.ComputerSeedMediaType || !sha256sum.ValidDigest(seed.ArtifactDigest) || !sha256sum.ValidDigest(result.RootfsDigest) {
 			return errors.New("computer boot metadata violates its admitted image or platform contract")
 		}
 		result.ImageConfig = seed.Config

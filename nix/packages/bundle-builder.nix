@@ -49,6 +49,6 @@ buildGoModule {
     description = "Helmr canonical installed-tree bundle finalizer";
     license = lib.licenses.asl20;
     mainProgram = "bundle-builder";
-    platforms = [ "x86_64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }

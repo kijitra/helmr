@@ -4,6 +4,7 @@ package firecracker
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/helmrdotdev/helmr/internal/vmplatform"
@@ -33,6 +34,7 @@ func TestPackagedFirecrackerProbeOutputIsAccepted(t *testing.T) {
 func testVMPlatform(t *testing.T, kernelDigest string, initramfsDigest string, rootfsDigest string) vmplatform.Profile {
 	t.Helper()
 	artifacts := testProbeRuntimeArtifacts()
+	artifacts.Arch = runtime.GOARCH
 	artifacts.Kernel.Digest = kernelDigest
 	artifacts.Initramfs.Digest = initramfsDigest
 	artifacts.Rootfs.Digest = rootfsDigest

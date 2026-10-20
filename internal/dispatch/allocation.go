@@ -15,6 +15,7 @@ import (
 	"github.com/helmrdotdev/helmr/internal/computer"
 	"github.com/helmrdotdev/helmr/internal/computercheckpoint"
 	"github.com/helmrdotdev/helmr/internal/db"
+	"github.com/helmrdotdev/helmr/internal/definition"
 	"github.com/helmrdotdev/helmr/internal/org"
 	"github.com/helmrdotdev/helmr/internal/pgvalue"
 	"github.com/helmrdotdev/helmr/internal/secret"
@@ -227,6 +228,9 @@ func (a *Allocator) AllocateImageBuild(ctx context.Context, env, preparation, ho
 		} else if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
+		if err := requireSeedPlatformArchitecture(ctx, tx, env, p.SpecID, supply.shape.VMPlatformID); err != nil {
+			return err
+		}
 		var cpuMillis, memoryBytes int64
 		if err := tx.QueryRow(ctx, `SELECT cpu_millis,memory_bytes FROM template_definitions WHERE environment_id=$1 AND image_spec_id=$2 ORDER BY deployment_id,template_id LIMIT 1`, env, p.SpecID).Scan(&cpuMillis, &memoryBytes); err != nil {
 			return err
@@ -330,6 +334,13 @@ func (a *Allocator) AllocateFreshLease(ctx context.Context, env, computerID uuid
  AND initial_root_id IS NOT NULL AND image_id IS NOT NULL AND preparation_failed_at IS NULL AND deleted_at IS NULL AND integrity_fault_at IS NULL AND recovery_save_id IS NULL
  AND NOT EXISTS(SELECT 1 FROM computer_leases l WHERE l.environment_id=$1 AND l.computer_id=$2 AND (l.fenced_at IS NULL OR l.initialized_at IS NOT NULL))
  AND (SELECT COALESCE(max(l.epoch),0) FROM computer_leases l WHERE l.environment_id=$1 AND l.computer_id=$2)=$3::bigint-1`, env, computerID, epoch).Scan(&cpuMillis, &memoryBytes, &base); err != nil {
+			return err
+		}
+		var spec uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT image_spec_id FROM computers WHERE environment_id=$1 AND id=$2`, env, computerID).Scan(&spec); err != nil {
+			return err
+		}
+		if err := requireSeedPlatformArchitecture(ctx, tx, env, spec, supply.shape.VMPlatformID); err != nil {
 			return err
 		}
 		shape, err := qualifyAllocationShape(ctx, tx, supply, cpuMillis, memoryBytes)
@@ -470,4 +481,16 @@ func (a *Allocator) AllocateRestoredLease(ctx context.Context, env, checkpoint u
 		return computer.ComputerAllocation{}, allocationError(err)
 	}
 	return result, nil
+}
+
+func requireSeedPlatformArchitecture(ctx context.Context, tx pgx.Tx, env, spec uuid.UUID, platform string) error {
+	var profile, arch string
+	if err := tx.QueryRow(ctx, `SELECT spec.seed->>'profile',platform.arch FROM image_specs spec JOIN vm_platforms platform ON platform.id=$3 WHERE spec.environment_id=$1 AND spec.id=$2`, env, spec, platform).Scan(&profile, &arch); err != nil {
+		return err
+	}
+	seedArch, err := definition.ArchitectureForSeedProfile(profile)
+	if err != nil || string(seedArch) != arch {
+		return ErrNotReady
+	}
+	return nil
 }

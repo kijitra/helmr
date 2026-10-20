@@ -268,6 +268,30 @@ func TestPreparationAllocationReconcilesLostStartPublishAndStop(t *testing.T) {
 		t.Fatal("cleanup restarted or retained released capacity")
 	}
 }
+
+func TestPreparationAllocationRequiresMatchingArchitecture(t *testing.T) {
+	for _, profile := range []string{definition.ComputerSeedProfileAArch64, definition.ComputerSeedProfile, "unknown-seed"} {
+		t.Run(profile, func(t *testing.T) {
+			owner, client, backend := preparationOwnerFixture(t)
+			owner.machines.RuntimeArchitecture = definition.ArchitectureAArch64
+			client.start.Seed.Profile = profile
+			// Exercise the constructor too: ARM is a supported explicit architecture.
+			rebuilt, err := NewPreparationAllocationOwner(owner.machines, client, owner.identity, owner.hostEpoch, owner.admitStart)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rebuilt.stageImage = owner.stageImage
+			err = rebuilt.Run(t.Context())
+			if profile == definition.ComputerSeedProfileAArch64 {
+				if err != nil || backend.starts.Load() != 1 {
+					t.Fatalf("ARM preparation failed: %v", err)
+				}
+			} else if err == nil || backend.starts.Load() != 0 {
+				t.Fatalf("mismatched seed started: %v", err)
+			}
+		})
+	}
+}
 func TestPreparationAllocationRetainsResourcesUntilPhysicalAbsence(t *testing.T) {
 	owner, client, backend := preparationOwnerFixture(t)
 	backend.guestFailed.Store(true)

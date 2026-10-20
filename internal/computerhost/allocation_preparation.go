@@ -65,7 +65,7 @@ type PreparationAllocationOwner struct {
 }
 
 func NewPreparationAllocationOwner(machines *PreparedMachines, client AllocatedPreparationClient, identity workerapi.AllocationIdentity, hostEpoch int64, admitStart func(context.Context) error) (*PreparationAllocationOwner, error) {
-	if machines == nil || machines.Backend == nil || machines.CAS == nil || machines.PlatformStore == nil || machines.ComputerObjects == nil || machines.Reservations == nil || !filepath.IsAbs(machines.TempDir) || machines.RuntimeArchitecture != definition.ArchitectureX8664 || machines.ComputerStagingBytes <= 0 || client == nil || admitStart == nil || identity.Kind != "preparation" || identity.Epoch <= 0 || hostEpoch <= 0 {
+	if machines == nil || machines.Backend == nil || machines.CAS == nil || machines.PlatformStore == nil || machines.ComputerObjects == nil || machines.Reservations == nil || !filepath.IsAbs(machines.TempDir) || !machines.RuntimeArchitecture.Valid() || machines.ComputerStagingBytes <= 0 || client == nil || admitStart == nil || identity.Kind != "preparation" || identity.Epoch <= 0 || hostEpoch <= 0 {
 		return nil, errors.New("preparation requires its physical backend, artifact stores, capacity and diagnostic bounds")
 	}
 	if err := wire.ValidatePreparationLogLimits(machines.PreparationLogLimits); err != nil {
@@ -126,7 +126,8 @@ func (o *PreparationAllocationOwner) Run(ctx context.Context) (resultErr error) 
 	if err != nil {
 		return err
 	}
-	if start.SeedObject.Digest != start.Seed.ArtifactDigest || start.Seed.Profile != definition.ComputerSeedProfile || start.SeedObject.MediaType != definition.ComputerSeedMediaType || !definition.ValidDeclaredID(start.TemplateDefinitionID) {
+	seedArchitecture, archErr := definition.ArchitectureForSeedProfile(start.Seed.Profile)
+	if archErr != nil || seedArchitecture != o.machines.RuntimeArchitecture || start.SeedObject.Digest != start.Seed.ArtifactDigest || start.SeedObject.MediaType != definition.ComputerSeedMediaType || !definition.ValidDeclaredID(start.TemplateDefinitionID) {
 		return errors.New("preparation seed or definition is invalid")
 	}
 	if err := (disk.SeedArtifact{Object: computerObject(start.SeedObject), LogicalBytes: disk.SeedCapacity}).Validate(disk.SeedCapacity); err != nil {

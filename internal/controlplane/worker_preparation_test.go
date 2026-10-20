@@ -316,7 +316,19 @@ func TestWorkerPreparationStartBindsProgramAndRechecksStorageRead(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			dbtest.MustExec(t, t.Context(), f.Pool, `UPDATE image_specs SET spec=$3 WHERE environment_id=$1 AND id=$2`, f.Environment, f.Deployment, string(specRaw))
+			var seedRaw []byte
+			for _, d := range manifest.Program.Metadata.Definitions {
+				if d.Template != nil && d.DeclaredID == spec.TemplateDefinitionID {
+					seedRaw, err = json.Marshal(d.Template.Seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if len(seedRaw) == 0 {
+				t.Fatal("fixture has no admitted template seed")
+			}
+			dbtest.MustExec(t, t.Context(), f.Pool, `UPDATE image_specs SET spec=$3,seed=$4 WHERE environment_id=$1 AND id=$2`, f.Environment, f.Deployment, string(specRaw), string(seedRaw))
 			dbtest.MustExec(t, t.Context(), f.Pool, `UPDATE deployments SET bundle_digest=$3 WHERE environment_id=$1 AND id=$2`, f.Environment, f.Deployment, digest)
 			store := &sessionBundleStore{bundleUploadStoreFixture: &bundleUploadStoreFixture{objects: map[string]cas.Object{digest: {Digest: digest, SizeBytes: int64(len(raw)), MediaType: bundle.MediaType}}}, body: raw}
 			switch mode {

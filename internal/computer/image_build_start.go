@@ -7,6 +7,7 @@ import (
 
 	"github.com/helmrdotdev/helmr/internal/artifact"
 	"github.com/helmrdotdev/helmr/internal/db"
+	"github.com/helmrdotdev/helmr/internal/definition"
 	"github.com/helmrdotdev/helmr/internal/sha256sum"
 	"github.com/helmrdotdev/helmr/internal/workergroup"
 	"github.com/jackc/pgx/v5"
@@ -39,13 +40,18 @@ func ReadImageBuildStart(ctx context.Context, database db.TxBeginner, host worke
 		}
 		var raw []byte
 		var sealed bool
-		if err := tx.QueryRow(ctx, `SELECT spec.spec,d.deployment_id,deployment.bundle_digest,platform.rootfs_digest,p.logical_bytes IS NOT NULL
+		var seedProfile, platformArch string
+		if err := tx.QueryRow(ctx, `SELECT spec.spec,d.deployment_id,deployment.bundle_digest,platform.rootfs_digest,p.logical_bytes IS NOT NULL,spec.seed->>'profile',platform.arch
  FROM image_builds p JOIN image_specs spec ON (spec.environment_id,spec.id)=(p.environment_id,p.image_spec_id)
  JOIN template_definitions d ON (d.environment_id,d.image_spec_id)=(spec.environment_id,spec.id)
  JOIN deployments deployment ON (deployment.environment_id,deployment.id)=(d.environment_id,d.deployment_id)
  JOIN vm_platforms platform ON platform.id=p.vm_platform_id
- WHERE p.environment_id=$1 AND p.id=$2 ORDER BY d.deployment_id,d.template_id LIMIT 1`, ref.EnvironmentID, ref.ImageBuildID).Scan(&raw, &result.DeploymentID, &result.BundleDigest, &result.RootfsDigest, &sealed); err != nil {
+ WHERE p.environment_id=$1 AND p.id=$2 ORDER BY d.deployment_id,d.template_id LIMIT 1`, ref.EnvironmentID, ref.ImageBuildID).Scan(&raw, &result.DeploymentID, &result.BundleDigest, &result.RootfsDigest, &sealed, &seedProfile, &platformArch); err != nil {
 			return err
+		}
+		seedArch, archErr := definition.ArchitectureForSeedProfile(seedProfile)
+		if archErr != nil || string(seedArch) != platformArch {
+			return ErrDenied
 		}
 		if sealed {
 			return ErrDenied

@@ -7,6 +7,12 @@ modloop=$3
 kernel_modules=$4
 tools_image=${BOOT_TOOLS_IMAGE:?BOOT_TOOLS_IMAGE is required}
 source_date_epoch=0
+arch=${ARCH:-x86_64}
+case "$arch" in
+ x86_64) docker_platform=linux/amd64 ;;
+ aarch64) docker_platform=linux/arm64 ;;
+ *) printf "unsupported ARCH: %s\n" "$arch" >&2; exit 1 ;;
+esac
 
 for path in "$initramfs" "$base" "$modloop" "$kernel_modules"; do
 	case "$path" in
@@ -17,7 +23,7 @@ for path in "$initramfs" "$base" "$modloop" "$kernel_modules"; do
 	esac
 done
 
-docker run --rm --platform linux/amd64 \
+docker run --rm --platform "$docker_platform" \
 	-v "$(pwd)":/work \
 	-w /work \
 	-e BASE="$base" \

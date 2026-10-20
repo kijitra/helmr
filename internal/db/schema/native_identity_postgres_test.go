@@ -133,7 +133,7 @@ func TestNativeIdentitySQLRejectsIncompletePayloads(t *testing.T) {
 	dbtest.MustExec(t, ctx, database.Pool, "DELETE FROM vm_platforms WHERE id=$1", p.ID)
 	legacy := dbtest.Digest("retained-legacy-runtime")
 	dbtest.MustExec(t, ctx, database.Pool, `INSERT INTO vm_platforms(id,descriptor_digest,firecracker_digest,firecracker_version,snapshot_format_version,host_kernel_release,kernel_digest,initramfs_digest,rootfs_digest) VALUES($1,$1,$1,'1.16.1','6.0.0','6.8.0',$1,$1,$1)`, legacy)
-	if err := run(ctx, database.DSN, func(m *migrate.Migrate) error { return m.Steps(-1) }); err != nil {
+	if err := run(ctx, database.DSN, func(m *migrate.Migrate) error { return m.Migrate(1) }); err != nil {
 		t.Fatal(err)
 	}
 	var retained string

@@ -341,6 +341,7 @@ func normalizeWorkerCapabilities(input workerapi.Capabilities) (workerapi.Capabi
 		cpuShapes[index].CPUConfigDigest = strings.TrimSpace(cpuShapes[index].CPUConfigDigest)
 	}
 	cpuEnvironment := input.CPUEnvironment
+	cpuEnvironment.ARM = input.CPUEnvironment.ARM.Clone()
 	cpuEnvironment.Digest = strings.TrimSpace(cpuEnvironment.Digest)
 	cpuEnvironment.FirecrackerVersion = strings.TrimSpace(cpuEnvironment.FirecrackerVersion)
 	cpuEnvironment.HostKernelRelease = strings.TrimSpace(cpuEnvironment.HostKernelRelease)

@@ -269,7 +269,16 @@ func AdmitStart(ctx context.Context, tx pgx.Tx, trust computer.TrustIssuer, p St
 				if err = tx.QueryRow(ctx, `SELECT spec.seed->>'profile' FROM computers c JOIN image_specs spec ON (spec.environment_id,spec.id)=(c.environment_id,c.image_spec_id) WHERE c.environment_id=$1 AND c.id=$2`, req.EnvironmentID, computerID).Scan(&profile); err != nil {
 					return err
 				}
-				if profile != definition.ComputerSeedProfile {
+				computerArch, err := definition.ArchitectureForSeedProfile(profile)
+				if err != nil {
+					return ErrInvalidInput
+				}
+				var targetProfile string
+				if err := tx.QueryRow(ctx, `SELECT spec.seed->>'profile' FROM template_definitions d JOIN templates t ON (t.environment_id,t.id)=(d.environment_id,d.template_id) JOIN image_specs spec ON (spec.environment_id,spec.id)=(d.environment_id,d.image_spec_id) WHERE d.environment_id=$1 AND d.deployment_id=$2 AND t.key=$3`, req.EnvironmentID, deployment, templateKey).Scan(&targetProfile); err != nil {
+					return err
+				}
+				targetArch, err := definition.ArchitectureForSeedProfile(targetProfile)
+				if err != nil || targetArch != computerArch {
 					return ErrInvalidInput
 				}
 			}

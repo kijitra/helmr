@@ -90,8 +90,8 @@ dockerTools.buildLayeredImage {
   };
 
   meta = {
-    description = "Canonical linux/amd64 Helmr deployment bundle builder";
+    description = "Canonical Helmr deployment bundle builder";
     license = lib.licenses.asl20;
-    platforms = [ "x86_64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
   };
 }
