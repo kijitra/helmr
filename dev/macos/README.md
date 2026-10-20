@@ -153,7 +153,11 @@ complete ARM64 runtime/seed/compiler artifacts are still required for execution.
 The repaired LocalVersion helper completed 20/20 physical checkpoint cycles on
 the M1 Max. A prior trial caught a missing durability boundary and was corrected
 before repetition. See [the recorded evidence](../../docs/testing/evidence/macos-localversion-checkpoint.json).
-Full Worker execution, production ext4 workloads and M3/Mac mini remain unverified.
+On 2026-10-20 the same bounded experiment also passed 20/20 cycles on an M3 Max,
+Mac15,9 with 128 GiB RAM and macOS 27.0.1. The [M3 evidence](../../docs/testing/evidence/macos-m3-localversion-checkpoint.json)
+also records the command-stream parsing repair, storage faults and one Linux-only
+test skip. Full Worker execution, production ext4 workloads, other M3
+configurations and Mac mini remain unverified.
 
 
 The later LocalVersion trial found and repaired a durability gap: the raw guest

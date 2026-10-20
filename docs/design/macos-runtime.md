@@ -24,7 +24,7 @@ at admission.
 | Target | Required qualification | Current evidence |
 | --- | --- | --- |
 | M1 Max reference Mac | Full lifecycle and fault suite on its recorded chip/OS/RAM configuration | 20/20 repaired LocalVersion synthetic checkpoint cycles passed; no full Worker qualification |
-| M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | Not run; exact model, RAM and macOS to be recorded |
+| M3-equipped Mac | Same native arm64 backend; full lifecycle and fault suite on the actual model | M3 Max/Mac15,9, 128 GiB, macOS 27.0.1: 20/20 bounded LocalVersion checkpoint cycles and storage faults passed; [evidence](../testing/evidence/macos-m3-localversion-checkpoint.json). Full Worker and other M3 configurations remain unqualified |
 | Apple Silicon Mac mini | Same native arm64 backend; qualify each claimed chip/OS/RAM configuration | Not run; exact model, chip, RAM and macOS to be recorded |
 
 A result on one Mac does not establish support for another chip or every

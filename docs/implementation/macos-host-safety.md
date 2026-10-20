@@ -1,7 +1,8 @@
 # macOS host safety implementation
 
 Status: the repaired Unix NBD/LocalVersion checkpoint experiment passed 20/20
-physical cycles on this M1 Max. ARM64 artifact contracts and native disk
+physical cycles on the M1 Max and, on 2026-10-20, 20/20 on one M3 Max configuration
+([M3 results](#m3-remote-qualification-2026-10-20)). ARM64 artifact contracts and native disk
 preparation and [native runtime registration](macos-runtime-identity.md) are implemented. Full macOS Worker support and everyday-host
 qualification are not established.
 
@@ -339,3 +340,57 @@ reactivation tests pass with existing lifecycle/admin API regression checks:
 Both independent reviewers report no remaining actionable finding for this
 slice. See [scope, compatibility and the same-boot limitation](macos-runtime-identity.md).
 This does not enable the native Worker or publish native checkpoints.
+
+## M3 remote qualification (2026-10-20)
+
+The existing experiment was built and operated over SSH on an Apple M3 Max,
+Mac15,9, 128 GiB RAM, macOS 27.0.1 / build 26A434. A separate GPU training workload
+remained running. This is one observed coexistence case, not a responsiveness,
+thermal or minimum-resource qualification.
+
+The first configuration check failed before helper launch: `bounded_command`
+combined stderr with the plist emitted on stdout by `hdiutil attach`. The image
+and unresolved marker remained in place. After confirming controller exit and
+the exact image, device, mountpoint and owner under the stable lock, the known
+image was normally detached, absence was rechecked, and only that run's private
+artifacts were removed. No forced detach, generic recovery, other VM stop or
+host setting change was used.
+
+The repair in `cbeb139750485bf1105c23abd67e12d01793d986` drains stdout and stderr
+independently and returns stdout alone. Both channels share the original output
+limit. Deadlines and pressure checks now remain active if the child closes its
+output pipes before exiting; only the owned child can be terminated. Malformed
+stdout and failed commands still retain quarantine. Regression tests first
+failed against the old implementation, then passed on the local and remote Macs.
+
+| Check | Result |
+| --- | --- |
+| Python admission, command and checkpoint tests | 47 passed on each Mac |
+| Configuration and NBD save/restore API validation | Passed on M3; no VM started for these checks |
+| ARM64 boot smoke | Passed; `/init` execution attempt observed, not full guest readiness |
+| Fresh-process LocalVersion checkpoint cycles | 20/20 passed, each 5.327–7.002 seconds |
+| RAM/process/FD continuity and coherent disk journals | Verified in each cycle; retained online cut unchanged after later writes |
+| VM/process exclusion and owned image cleanup | Verified for every cycle; no unresolved marker remained |
+| Owned-volume exhaustion | `ENOSPC` after 2,104,492,032 bytes; image stayed at 2,147,483,648 bytes |
+| Test controller death after attachment | Next admission refused; exact known attachment reconciled; no VM created |
+| Darwin disk/NBD/computerhost/identity/API race suites | Five packages passed; 225 top-level tests passed, one Linux-only test skipped; 564 passing records including subcases |
+| Remote source provenance | All 2,658 tracked source files matched the repair commit; helper SHA and fixed Go/kernel/input hashes recorded |
+
+The skipped `TestPreparedProgramMemoHitPreservesSnapshotAndTargetAuthority`
+requires Linux artifact snapshots. It is not a macOS verifier qualification.
+Linux execution/KVM tests and the full repository suite were not run. An
+independent Codex plan, code and explicit security-boundary review found no
+actionable issue in this repair; the Nix/Claude review wrappers were unavailable.
+
+[Sanitized M3 evidence](../testing/evidence/macos-m3-localversion-checkpoint.json)
+contains exact source and binary hashes, per-cycle results, fault checks and
+retained raw-artifact hashes. Raw boot-session identifiers, private host paths
+and workload data are omitted.
+
+The production Worker is still unavailable on macOS. Its startup remains tied
+to Firecracker, Linux artifact verification and Linux network cleanup. The next
+integration must preserve guest continuation authority, isolated verification,
+network/secret enforcement and checkpoint publication; it must not bypass those
+checks to obtain a successful startup. Actual Agent turns, ask/resume, production
+ext4 workloads, long-duration host behavior, other M3 configurations and Mac mini
+remain unverified.
