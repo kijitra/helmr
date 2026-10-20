@@ -171,14 +171,17 @@ def stop_child(child):
 def bounded_command(command, *, seconds=30, pass_fds=(), cwd=None, tick=None):
     deadline = elapsed_clock() + seconds
     child = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, cwd=cwd, pass_fds=pass_fds,
+                             stderr=subprocess.PIPE, cwd=cwd, pass_fds=pass_fds,
                              env={'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'HOME': str(cwd or '/private/tmp'),
                                   'TMPDIR': str(cwd or '/private/tmp'), 'LANG': 'C'})
     output = bytearray()
+    errors = bytearray()
     selector = selectors.DefaultSelector()
-    selector.register(child.stdout, selectors.EVENT_READ)
+    selector.register(child.stdout, selectors.EVENT_READ, output)
+    selector.register(child.stderr, selectors.EVENT_READ, errors)
     try:
-        while selector.get_map():
+        # EOF is not process exclusion: keep the watchdog active until exit.
+        while selector.get_map() or child.poll() is None:
             if elapsed_clock() >= deadline:
                 raise SafetyError('command deadline exceeded; run remains quarantined')
             if tick:
@@ -188,18 +191,24 @@ def bounded_command(command, *, seconds=30, pass_fds=(), cwd=None, tick=None):
                 if not data:
                     selector.unregister(key.fileobj)
                 else:
-                    output.extend(data)
-                    if len(output) > OUTPUT_LIMIT:
+                    key.data.extend(data)
+                    if len(output) + len(errors) > OUTPUT_LIMIT:
                         raise SafetyError('command output exceeded 1 MiB; run remains quarantined')
-        child.wait(timeout=max(0.01, deadline - elapsed_clock()))
+        try:
+            child.wait(timeout=max(0.01, deadline - elapsed_clock()))
+        except subprocess.TimeoutExpired as error:
+            raise SafetyError('command deadline exceeded; run remains quarantined') from error
         if child.returncode != 0:
-            raise SafetyError(f'command failed ({child.returncode}): {bytes(output[-2048:]).decode(errors="replace")}')
+            raise SafetyError(f'command failed ({child.returncode}): '
+                              f'stdout: {bytes(output[-1024:]).decode(errors="replace")}; '
+                              f'stderr: {bytes(errors[-1024:]).decode(errors="replace")}')
         return bytes(output)
     finally:
         selector.close()
         stop_child(child)
         child.stdin.close()
         child.stdout.close()
+        child.stderr.close()
 
 
 def memory_available(vm_output):

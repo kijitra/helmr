@@ -150,6 +150,81 @@ class SafetyTests(unittest.TestCase):
         with self.assertRaisesRegex(probe.SafetyError, 'command failed'):
             probe.bounded_command([sys.executable, '-c', 'raise SystemExit(7)'])
 
+    def test_command_keeps_plist_stdout_separate_from_warning_stderr(self):
+        document = plistlib.dumps({'system-entities': []})
+        for warning_first in (False, True):
+            with self.subTest(warning_first=warning_first):
+                writes = ['os.write(1, ' + repr(document) + ')',
+                          'os.write(2, b"hdiutil warning\\n")']
+                if warning_first:
+                    writes.reverse()
+                script = 'import os; ' + '; '.join(writes)
+                result = probe.bounded_command([sys.executable, '-c', script])
+                self.assertEqual(result, document)
+                self.assertEqual(plistlib.loads(result), {'system-entities': []})
+
+    def test_command_drains_both_streams_without_deadlock(self):
+        script = 'import os\nfor i in range(32):\n os.write(1,b"a"*4096)\n os.write(2,b"b"*4096)'
+        self.assertEqual(probe.bounded_command([sys.executable, '-c', script]), b'a' * 131072)
+
+    def test_stderr_and_combined_output_share_one_bound(self):
+        for writes in ['os.write(2,b"e"*2048)',
+                       'os.write(1,b"a"*600); os.write(2,b"e"*600)']:
+            with self.subTest(writes=writes), patch.object(probe, 'OUTPUT_LIMIT', 1024):
+                with self.assertRaisesRegex(probe.SafetyError, 'output exceeded'):
+                    probe.bounded_command([sys.executable, '-c', 'import os; ' + writes])
+
+    def test_command_drains_remaining_pipe_after_stdout_closes(self):
+        result = probe.bounded_command([sys.executable, '-c',
+            'import os; os.close(1); os.write(2,b"warning"*20000)'])
+        self.assertEqual(result, b'')
+
+    def test_command_drains_stdout_after_stderr_closes(self):
+        result = probe.bounded_command([sys.executable, '-c',
+            'import os; os.close(2); os.write(1,b"out"*20000)'])
+        self.assertEqual(result, b'out' * 20000)
+
+    def test_malformed_stdout_is_not_repaired_by_stream_separation(self):
+        with self.assertRaises(plistlib.InvalidFileException):
+            with probe.Admission(self.root):
+                raw = probe.bounded_command([sys.executable, '-c',
+                    'import os; os.write(1,b"not a plist"); os.write(2,b"warning")'])
+                plistlib.loads(raw)
+        self.assertTrue((self.root / 'active.json').exists())
+        with self.assertRaisesRegex(probe.SafetyError, 'unresolved'):
+            with probe.Admission(self.root):
+                self.fail('malformed output allowed a new run')
+
+    def test_stderr_overflow_preserves_admission_quarantine(self):
+        with probe.Admission(self.root):
+            with patch.object(probe, 'OUTPUT_LIMIT', 1024):
+                with self.assertRaisesRegex(probe.SafetyError, 'output exceeded'):
+                    probe.bounded_command([sys.executable, '-c',
+                        'import os; os.write(2,b"e"*2048)'])
+        with self.assertRaisesRegex(probe.SafetyError, 'unresolved'):
+            with probe.Admission(self.root):
+                self.fail('overflow allowed a new run')
+
+    def test_closed_output_pipes_do_not_disable_pressure_monitor(self):
+        calls = []
+        def monitor():
+            calls.append(True)
+            if len(calls) >= 2:
+                raise probe.SafetyError('pressure monitor active')
+        with self.assertRaisesRegex(probe.SafetyError, 'pressure monitor active'):
+            probe.bounded_command([sys.executable, '-c',
+                'import os,time; os.close(1); os.close(2); time.sleep(5)'], seconds=.5, tick=monitor)
+
+    def test_closed_output_pipes_still_report_safety_deadline(self):
+        with self.assertRaisesRegex(probe.SafetyError, 'deadline'):
+            probe.bounded_command([sys.executable, '-c',
+                'import os,time; os.close(1); os.close(2); time.sleep(5)'], seconds=.2)
+
+    def test_failure_retains_labelled_stdout_and_stderr_diagnostics(self):
+        with self.assertRaisesRegex(probe.SafetyError, 'stdout: out.*stderr: diagnostic'):
+            probe.bounded_command([sys.executable, '-c',
+                'import os; os.write(1,b"out"); os.write(2,b"diagnostic"); raise SystemExit(7)'])
+
     def test_ignored_term_is_killed_only_as_owned_child(self):
         script = 'import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); print("ready",flush=True); time.sleep(20)'
         with self.assertRaisesRegex(probe.SafetyError, 'deadline'):
