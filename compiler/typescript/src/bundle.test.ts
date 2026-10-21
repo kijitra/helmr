@@ -15,7 +15,7 @@ async function fixture(files: Record<string, unknown>) {
  return {root,output,close:()=>rm(temporary,{recursive:true,force:true})}
 }
 const config = {dirs:["agents"],ignorePatterns:[],external:[],assets:[]}
-const run = (f: {root:string;output:string}, overrides = {}) => bundleProgram({...f,nodeVersion:"24.21.0",config:{...config,...overrides}})
+const run = (f: {root:string;output:string}, overrides = {}) => bundleProgram({...f,nodeVersion:"24.22.1",config:{...config,...overrides}})
 
 test("selective payload preserves root imports and explicit assets, excluding author source and dev dependencies",async()=>{
  const f=await fixture({"package.json":{name:"fixture",type:"module",imports:{"#project/*":"./*"},scripts:{prepare:"exit 1"},devDependencies:{unused:"1"}},"prompts/a.md":"prompt","node_modules/unused/index.js":"unused"})

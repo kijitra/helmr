@@ -5,7 +5,7 @@ import { readFile, writeFile } from "node:fs/promises"
 import { z } from "zod"
 
 export const restoreComputer = template({
-  id: "helmr-computer-restore", image: image("helmr-computer-restore").from("node:24-bookworm-slim").workdir("/root"),
+  id: "helmr-computer-restore", image: image("helmr-computer-restore").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/root"),
   resources: { cpu: 1, memory: "1GiB" },
 })
 const payload = z.object({ marker: z.string().min(1) }).strict()

@@ -8,7 +8,7 @@ import { z } from "zod"
 const guideInputs = source.directory("cases/runtime/guides")
 
 const base = image("helmr-runtime-smoke")
-  .from("node:24-bookworm-slim")
+  .from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
   .workdir("/workspace")
   .copy(guideInputs, "/opt/verification/inputs")
   .run([
@@ -20,7 +20,7 @@ const base = image("helmr-runtime-smoke")
       "rm -rf /var/lib/apt/lists/*",
     ].join(" && "),
   ])
-  .run(["npm", "install", "-g", "bun@1.3.13"])
+  .run(["npm", "install", "-g", "bun@1.4.3"])
   .workdir("/workspace")
 
 export const runtimeSmokeComputer = template({

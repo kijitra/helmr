@@ -8,7 +8,7 @@ const execFileAsync = promisify(execFile)
 const probeSource = source.file("cases/datapath-network/probe.py")
 
 const base = image("helmr-datapath-network")
-  .from("node:24-bookworm-slim")
+  .from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
   .copy(probeSource, "/opt/helmr/datapath-network-probe.py")
   .run([
     "sh",

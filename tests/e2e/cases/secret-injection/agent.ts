@@ -2,7 +2,7 @@ import { fixtureValue } from "../../support/runtime-mcp"
 import { agent, template, image } from "@helmr/sdk"
 import { createHash } from "node:crypto"
 import { z } from "zod"
-const base = image("verification-secret").from("node:24-bookworm-slim")
+const base = image("verification-secret").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
 export const secretComputer = template({
   id: "helmr-secret-smoke", image: base, resources: { cpu: 1, memory: "1GiB" },
 })

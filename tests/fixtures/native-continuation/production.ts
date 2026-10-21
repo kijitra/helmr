@@ -14,7 +14,7 @@ import { checkSessionDiscovery, type DiscoveryState } from "./session-discovery"
 import { checkSecretBindings, type SecretBindingState } from "./secret-bindings"
 import { conversation } from "../../../examples/issue-fixer/agents/issue-fixer/conversation"
 
-const baseImage = image("native-computer").from("node:24.21.0-bookworm-slim")
+const baseImage = image("native-computer").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
 // Replaced by the fixture packaging command, before ordinary compilation.
 const computerImage = process.env.HELMR_NATIVE_PERFORMANCE === "1"
   ? baseImage.copy(source.directory("performance"), "/opt/native-performance")

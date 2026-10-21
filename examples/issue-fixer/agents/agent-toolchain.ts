@@ -12,7 +12,7 @@ import { z } from "zod"
 const guideInputs = source.directory("guides")
 
 const base = image("helmr-agent-toolchain-smoke")
-  .from("node:24-bookworm-slim")
+  .from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
   .workdir("/sandbox")
   .copy(guideInputs, "/opt/helmr-dev-workflows/guides")
   .run([
@@ -36,7 +36,7 @@ const base = image("helmr-agent-toolchain-smoke")
     ].join(" && "),
   ])
   .env("PATH", "/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
-  .run(["npm", "install", "-g", "bun@1.3.13"])
+  .run(["npm", "install", "-g", "bun@1.4.3"])
   .workdir("/sandbox")
 
 export const agentToolchainSmokeComputer = template({

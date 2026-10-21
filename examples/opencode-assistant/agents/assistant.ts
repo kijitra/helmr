@@ -5,7 +5,7 @@ import { OpenCodeHarness } from "./opencode"
 export const workspace = template({
   id: "opencode-workspace",
   image: image("opencode-workspace")
-    .from("node:24-bookworm-slim")
+    .from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
     .run(["node", "-e", "const fs = require('node:fs'); fs.mkdirSync('/etc/ssl/certs', { recursive: true }); fs.writeFileSync('/etc/ssl/certs/ca-certificates.crt', require('node:tls').rootCertificates.join(String.fromCharCode(10)) + String.fromCharCode(10))"])
     .run(["sh", "-ceu", "sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends ca-certificates git ripgrep && rm -rf /var/lib/apt/lists/*"])
     .run(["npm", "install", "-g", "opencode-ai@1.18.30"])

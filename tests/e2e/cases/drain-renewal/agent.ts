@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto"
 import { readFile, writeFile } from "node:fs/promises"
 import { z } from "zod"
 
-export const renewalComputer = template({ id: "verification-drain-renewal", image: image("verification-drain-renewal").from("node:24-bookworm-slim").workdir("/workspace"), resources: { cpu: 1, memory: "1GiB" } })
+export const renewalComputer = template({ id: "verification-drain-renewal", image: image("verification-drain-renewal").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/workspace"), resources: { cpu: 1, memory: "1GiB" } })
 
 export const renewalAgent = agent({
   id: "verification-drain-renewal", template: renewalComputer, maxTurnDuration: "40m",

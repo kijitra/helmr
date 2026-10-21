@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises"
 import { setTimeout as sleep } from "node:timers/promises"
 import { z } from "zod"
 
-const base = image("helmr-helper-smoke").from("node:24-bookworm-slim").workdir("/workspace")
+const base = image("helmr-helper-smoke").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/workspace")
 export const helperCallerComputer = template({
   id: "helmr-helper-caller-smoke", image: base, resources: { cpu: 1, memory: "1GiB" },
 })
