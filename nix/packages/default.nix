@@ -12,6 +12,22 @@ let
   inherit (pkgs) lib;
   pkgsUnstable = import nixpkgs-unstable { inherit system; };
   pkgsBun = import nixpkgs-bun { inherit system; };
+  bunPlatform = {
+    aarch64-darwin = "darwin-aarch64";
+    aarch64-linux = "linux-aarch64";
+    x86_64-linux = "linux-x64-baseline";
+  }.${system};
+  bun = pkgsBun.bun.overrideAttrs (_: {
+    version = "1.4.3";
+    src = pkgs.fetchurl {
+      url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-${bunPlatform}.zip";
+      sha256 = {
+        aarch64-darwin = "80afd4c069b46a6fa8f3ec520bebc750a7843e4a8d5b9583d29ad436c00a3403";
+        aarch64-linux = "efa9813da5ed72423bf847f916e8d2c47c0d776add972354026a75e10da9aa21";
+        x86_64-linux = "1fc2edac843102909e3a1be1d8d9802cc6071cf074e67e88231f4ffe0f8b397b";
+      }.${system};
+    };
+  });
   runtimeDependencies = builtins.fromJSON (
     builtins.readFile ../../internal/version/runtime-dependencies.json
   );
@@ -50,16 +66,23 @@ let
   };
   # The pinned package set no longer supports x86_64-darwin; retain its existing construction there.
   pkgsGo = if system == "x86_64-darwin" then null else import nixpkgs-go { inherit system; };
-  goPackage =
+  pinnedGoPackage =
     if pkgsGo == null then
       pkgs.callPackage "${nixpkgs-go}/pkgs/development/compilers/go/1.27.nix" {
         inherit buildGo127Module;
       }
     else
       pkgsGo.go_1_27;
+  goPackage = pinnedGoPackage.overrideAttrs (_: {
+    version = "1.27.3";
+    src = pkgs.fetchurl {
+      url = "https://go.dev/dl/go1.27.3.src.tar.gz";
+      hash = "sha256-bndJA1zzYPBrJXXRYup535/ajvZxiJ5cN1+OUHd/Jrs=";
+    };
+  });
   squashfsTools = pkgs.callPackage ./squashfs-tools.nix { };
   timezoneData = pkgs.callPackage ./timezone-data.nix { };
-  platformEntries = pkgs.callPackage ./platform-entries.nix { bun = pkgsBun.bun; };
+  platformEntries = pkgs.callPackage ./platform-entries.nix { inherit bun; };
   runtimeReleaseUnchecked = pkgs.callPackage ./runtime-release.nix {
     inherit squashfsTools platformEntries;
     nodeVersion = nodeRelease.version;
@@ -84,13 +107,13 @@ let
       ;
     baseImage = debianImage debianImages.builderBase;
     nodeArchive = nodeArchive "x86_64-linux";
-    bunArchive = pkgsBun.bun.src;
+    bunArchive = bun.src;
   };
   buildGo127Module =
     if pkgsGo == null then
       pkgs.callPackage "${nixpkgs}/pkgs/build-support/go/module.nix" { go = goPackage; }
     else
-      pkgsGo.buildGo127Module;
+      pkgsGo.buildGo127Module.override { go = goPackage; };
   staticcheck = buildGo127Module {
     pname = "staticcheck";
     version = "2026.2.1";
@@ -133,7 +156,7 @@ let
     buildGoModule = buildGo127Module;
     version = platformVersion;
     inherit sourceCommit;
-    bun = pkgsBun.bun;
+    inherit bun;
     nodejs_24 = nodejs;
   };
   runtimeRelease =
@@ -226,7 +249,7 @@ in
   inherit timezoneData;
   inherit platformEntries;
   default = helmr;
-  bun = pkgsBun.bun;
+  inherit bun;
   apko = if pkgsUnstable ? apko then pkgsUnstable.apko else pkgs.apko;
 }
 // lib.optionalAttrs (system == "x86_64-linux") (rec {

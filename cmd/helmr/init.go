@@ -92,7 +92,7 @@ func starterPackageJSON() string {
 	return `{
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.3.13",
+  "packageManager": "bun@1.4.3",
   "devEngines": {
     "runtime": {
       "name": "node",
@@ -156,7 +156,7 @@ const starterHelloAgent = `import { agent, template, image } from "@helmr/sdk"
 
 export const helloComputer = template({
   id: "hello",
-  image: image("hello").from("node:24-bookworm-slim").workdir("/app"),
+  image: image("hello").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/app"),
   resources: { cpu: 1, memory: "1GiB" },
 })
 

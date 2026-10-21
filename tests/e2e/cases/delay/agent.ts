@@ -6,7 +6,7 @@ import { z } from "zod"
 
 export const delayComputer = template({
   id: "helmr-delay-smoke",
-  image: image("helmr-delay-smoke").from("node:24-bookworm-slim").workdir("/workspace"),
+  image: image("helmr-delay-smoke").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/workspace"),
   resources: { cpu: 1, memory: "1GiB" },
 })
 

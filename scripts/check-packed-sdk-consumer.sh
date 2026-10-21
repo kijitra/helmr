@@ -55,7 +55,7 @@ if (!rejected) throw new Error("invalid question was accepted")
 const sourceFile: SourceFile = source.file("./package.json")
 const sourceDirectory: SourceDirectory = source.directory("./src")
 const fixtureImage: ImageBuilder = image("packed-consumer-image")
-  .from("node:24-bookworm-slim")
+  .from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d")
   .copy(sourceFile, "/app/package.json")
   .copy(sourceDirectory, "/app/src")
 const machine: TemplateDefinition = template({

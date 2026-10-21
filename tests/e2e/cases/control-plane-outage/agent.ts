@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto"
 import { readFile, writeFile } from "node:fs/promises"
 import { z } from "zod"
 
-export const outageComputer = template({ id: "verification-outage", image: image("verification-outage").from("node:24-bookworm-slim").workdir("/workspace"), resources: { cpu: 1, memory: "1GiB" } })
+export const outageComputer = template({ id: "verification-outage", image: image("verification-outage").from("node:24.22.1-bookworm-slim@sha256:1681862882da07ee5476fee047bcf34138833f1df42633bb25bcb0f438d5bf3d").workdir("/workspace"), resources: { cpu: 1, memory: "1GiB" } })
 
 export const outageAgent = agent({
   id: "verification-outage", template: outageComputer, maxTurnDuration: "10m",
