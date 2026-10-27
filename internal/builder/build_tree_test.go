@@ -13,7 +13,7 @@ import (
 
 func TestBuildTreeAcceptsManagerNativeOutput(t *testing.T) {
 	tree := artifacttest.NewMemory()
-	tree.AddFile("package.json", []byte(`{"packageManager":"bun@1.3.13"}`), 0644)
+	tree.AddFile("package.json", []byte(`{"packageManager":"bun@1.4.4"}`), 0644)
 	tree.AddDirectory("node_modules")
 	tree.AddDirectory("node_modules/.bin")
 	tree.AddDirectory("node_modules/tool")

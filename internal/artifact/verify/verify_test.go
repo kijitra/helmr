@@ -271,7 +271,7 @@ func newTestProgram(t *testing.T) *testProgram {
 	memory.AddFile(artifacttest.ModulePath("b"), []byte("export const chat = {}"), 0644)
 	memory.AddFile(sourcePath, sourceRaw, 0644)
 	memory.AddFile("helmr.config.ts", configSourceRaw, 0644)
-	memory.AddFile("package.json", []byte(`{"packageManager":"bun@1.3.13"}`), 0644)
+	memory.AddFile("package.json", []byte(`{"packageManager":"bun@1.4.4"}`), 0644)
 	memory.AddFile("bun.lock", lockfile, 0644)
 
 	program := &testProgram{
