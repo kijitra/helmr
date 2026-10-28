@@ -2,7 +2,7 @@
   "name": "helmr-opencode-assistant",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.3.13",
+  "packageManager": "bun@1.4.4",
   "version": "0.1.0",
   "scripts": {
     "typecheck": "tsc --noEmit",

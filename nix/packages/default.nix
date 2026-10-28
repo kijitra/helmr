@@ -12,6 +12,22 @@ let
   inherit (pkgs) lib;
   pkgsUnstable = import nixpkgs-unstable { inherit system; };
   pkgsBun = import nixpkgs-bun { inherit system; };
+  bunPlatform = {
+    aarch64-darwin = "darwin-aarch64";
+    aarch64-linux = "linux-aarch64";
+    x86_64-linux = "linux-x64-baseline";
+  }.${system};
+  bun = pkgsBun.bun.overrideAttrs (_: {
+    version = "1.4.4";
+    src = pkgs.fetchurl {
+      url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.4/bun-${bunPlatform}.zip";
+      sha256 = {
+        aarch64-darwin = "c240d7f0ccb90c263a849fcdb09b7ee62630d921348ed6aafda86b9d577bc510";
+        aarch64-linux = "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e";
+        x86_64-linux = "e0446eb55995772eb9894bebae9a6be368d985a8b9271ee124486f9946eedd76";
+      }.${system};
+    };
+  });
   runtimeDependencies = builtins.fromJSON (
     builtins.readFile ../../internal/version/runtime-dependencies.json
   );
@@ -59,7 +75,7 @@ let
       pkgsGo.go_1_27;
   squashfsTools = pkgs.callPackage ./squashfs-tools.nix { };
   timezoneData = pkgs.callPackage ./timezone-data.nix { };
-  platformEntries = pkgs.callPackage ./platform-entries.nix { bun = pkgsBun.bun; };
+  platformEntries = pkgs.callPackage ./platform-entries.nix { inherit bun; };
   runtimeReleaseUnchecked = pkgs.callPackage ./runtime-release.nix {
     inherit squashfsTools platformEntries;
     nodeVersion = nodeRelease.version;
@@ -84,7 +100,7 @@ let
       ;
     baseImage = debianImage debianImages.builderBase;
     nodeArchive = nodeArchive "x86_64-linux";
-    bunArchive = pkgsBun.bun.src;
+    bunArchive = bun.src;
   };
   buildGo127Module =
     if pkgsGo == null then
@@ -133,7 +149,7 @@ let
     buildGoModule = buildGo127Module;
     version = platformVersion;
     inherit sourceCommit;
-    bun = pkgsBun.bun;
+    inherit bun;
     nodejs_24 = nodejs;
   };
   runtimeRelease =
@@ -226,7 +242,7 @@ in
   inherit timezoneData;
   inherit platformEntries;
   default = helmr;
-  bun = pkgsBun.bun;
+  inherit bun;
   apko = if pkgsUnstable ? apko then pkgsUnstable.apko else pkgs.apko;
 }
 // lib.optionalAttrs (system == "x86_64-linux") (rec {

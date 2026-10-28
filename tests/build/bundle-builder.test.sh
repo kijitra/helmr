@@ -194,10 +194,10 @@ build_fixture() {
 # Generated compiler inputs remain readable under a restrictive caller umask.
 (umask 077; build_fixture npm npm@11.5.1)
 build_fixture pnpm pnpm@10.14.0
-build_fixture bun bun@1.3.13
+build_fixture bun bun@1.4.4
 build_fixture yarn yarn@4.9.2
 # An exact Bun selector is an ordinary versioned registry fetch.
-grep -F '["npx","--yes","bun@1.3.13","install"]' "$tmp/bun.log" >/dev/null
+grep -F '["npx","--yes","bun@1.4.4","install"]' "$tmp/bun.log" >/dev/null
 
 # Without a selector the lockfile chooses the manager: Corepack's pinned pnpm
 # and the image's official Bun. The lockfiles come from the same tools.

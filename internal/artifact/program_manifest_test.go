@@ -38,7 +38,7 @@ func TestProgramManifestRejectsProducerAuthority(t *testing.T) {
 		"configSource":   map[string]any{},
 		"inputs":         []any{},
 		"lockfile":       map[string]any{},
-		"packageManager": "bun@1.3.13",
+		"packageManager": "bun@1.4.4",
 	}
 	for name, value := range producerFields {
 		t.Run(name, func(t *testing.T) {
